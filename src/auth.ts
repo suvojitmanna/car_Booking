@@ -63,7 +63,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
 
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         await connectDb();
 
@@ -71,15 +71,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
         });
 
+        const googleImage = profile?.picture as string | undefined;
+
         if (!dbUser) {
           const newUser = await User.create({
             name: user.name as string,
             email: user.email as string,
+            profilePicture: googleImage || "",
           });
 
           user.id = newUser._id.toString();
           user.role = newUser.role;
         } else {
+          if (googleImage) {
+            dbUser.profilePicture = googleImage;
+            await dbUser.save();
+          }
+
           user.id = dbUser._id.toString();
           user.role = dbUser.role;
         }

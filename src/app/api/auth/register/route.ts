@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password,image } = await req.json();
     await connectDb();
     let user = await User.findOne({ email });
     if (user) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const hashedPassword = await bcrypt.hash(password,10)
 
     user = await User.create({
-        name,email,password:hashedPassword
+        name,email,image,password:hashedPassword
     })
     return NextResponse.json(
         user,

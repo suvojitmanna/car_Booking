@@ -3,6 +3,7 @@ import mongoose, { Document, Model } from "mongoose";
 interface IUser extends Document {
   name: string;
   email: string;
+  profilePicture?: string;
   password?: string;
   role: "user" | "partner" | "admin";
   createdAt: Date;
@@ -22,6 +23,10 @@ const userSchema = new mongoose.Schema<IUser>(
       unique: true,
       lowercase: true,
       trim: true,
+    },
+    profilePicture: {
+      type: String,
+      default: "",
     },
     password: {
       type: String,
