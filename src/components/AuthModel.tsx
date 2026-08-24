@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Eye,
@@ -21,6 +21,8 @@ type propType = {
   onClose: () => void;
 };
 
+type setType = "login" | "signup" | "otp";
+
 const AuthModel = ({ open, onClose }: propType) => {
   const [step, setStep] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +31,9 @@ const AuthModel = ({ open, onClose }: propType) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [timer, setTimer] = useState(30);
 
   const isLoginDisabled = !email.trim() || !password.trim() || loading;
   const isSignupDisabled =
@@ -36,6 +41,7 @@ const AuthModel = ({ open, onClose }: propType) => {
 
   const data = useSession();
   console.log(data);
+
   const handleSignup = async () => {
     setLoading(true);
     try {
@@ -44,7 +50,7 @@ const AuthModel = ({ open, onClose }: propType) => {
         email,
         password,
       });
-      console.log(data);
+      setStep("otp");
       setLoading(false);
     } catch (error: any) {
       setLoading(false);
@@ -65,6 +71,85 @@ const AuthModel = ({ open, onClose }: propType) => {
     await signIn("google");
   };
 
+  const handleVerifyOtp = async (enteredOtp?: string) => {
+    setLoading(true);
+
+    try {
+      const { data } = await axios.post("/api/auth/verify-email", {
+        email,
+        otp: enteredOtp || otp.join(""),
+      });
+
+      console.log(data);
+
+      setStep("login");
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (step === "otp" && open) {
+      setTimeout(() => {
+        otpRefs.current[0]?.focus();
+      }, 100);
+    }
+  }, [step, open]);
+
+  const handleChangOtp = (index: number, value: string) => {
+    if (!/^[0-9]?$/.test(value)) return;
+
+    const updated = [...otp];
+    updated[index] = value;
+    setOtp(updated);
+
+    if (value && index < otp.length - 1) {
+      otpRefs.current[index + 1]?.focus();
+    }
+
+    if (
+      value &&
+      index === otp.length - 1 &&
+      updated.every((digit) => digit !== "")
+    ) {
+      handleVerifyOtp(updated.join(""));
+    }
+  };
+
+  useEffect(() => {
+    if (timer === 0) return;
+
+    const interval = setInterval(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  const handleResendOtp = async () => {
+    if (timer > 0) return;
+
+    try {
+      setLoading(true);
+      setError("");
+
+      await axios.post("/api/auth/resend-otp", {
+        email,
+      });
+
+      setOtp(["", "", "", "", "", ""]);
+      setTimer(30);
+
+      otpRefs.current[0]?.focus();
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Failed to resend OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -74,7 +159,7 @@ const AuthModel = ({ open, onClose }: propType) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[90] bg-black/80 backdrop-blur-md flex items-center justify-center px-4"
+            className="fixed inset-0 z-[90] bg-black/30 backdrop-blur-md flex items-center justify-center px-4"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 40 }}
@@ -103,25 +188,32 @@ const AuthModel = ({ open, onClose }: propType) => {
                     Premium vehicle Booking
                   </p>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  className="w-full h-11 rounded-3xl border border-black/20 flex items-center justify-center gap-3 text-sm font-semibold hover:bg-black hover:text-white transition cursor-pointer"
-                  onClick={handleGoogleLogin}
-                >
-                  <Image
-                    src={"/google.png"}
-                    alt="google"
-                    width={20}
-                    height={20}
-                  />
-                  Continue with Google
-                </motion.button>
 
-                <div className="flex items-center gap-4">
-                  <div className="my-6 flex-1 h-px bg-black/10" />
-                  <div className="text-xs text-gray-500">OR</div>
-                  <div className="flex-1 h-px bg-black/10" />
-                </div>
+                {step == "otp" ? (
+                  ""
+                ) : (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      className="w-full h-11 rounded-3xl border border-black/20 flex items-center justify-center gap-3 text-sm font-semibold hover:bg-black hover:text-white transition cursor-pointer"
+                      onClick={handleGoogleLogin}
+                    >
+                      <Image
+                        src={"/google.png"}
+                        alt="google"
+                        width={20}
+                        height={20}
+                      />
+                      Continue with Google
+                    </motion.button>
+                    <div className="flex items-center gap-4">
+                      <div className="my-6 flex-1 h-px bg-black/10" />
+                      <div className="text-xs text-gray-500">OR</div>
+                      <div className="flex-1 h-px bg-black/10" />
+                    </div>
+                  </>
+                )}
+
                 <div>
                   {step == "login" && (
                     <motion.div
@@ -208,6 +300,7 @@ const AuthModel = ({ open, onClose }: propType) => {
                       </div>
                     </motion.div>
                   )}
+
                   {step == "signup" && (
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}
@@ -306,6 +399,80 @@ const AuthModel = ({ open, onClose }: propType) => {
                         >
                           login
                         </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {step == "otp" && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                    >
+                      <h2 className="text-center item-center font-semibold text-xl">
+                        Verify Email
+                      </h2>
+                      <div className="mt-6 flex justify-between gap-2">
+                        {otp.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => {
+                              otpRefs.current[i] = el;
+                            }}
+                            id={`otp-${i}`}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleChangOtp(i, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Backspace") {
+                                if (otp[i]) {
+                                  const updated = [...otp];
+                                  updated[i] = "";
+                                  setOtp(updated);
+                                } else if (i > 0) {
+                                  otpRefs.current[i - 1]?.focus();
+
+                                  const updated = [...otp];
+                                  updated[i - 1] = "";
+                                  setOtp(updated);
+                                }
+                              }
+                            }}
+                            className="w-10 h-12 sm:w-12 text-center text-lg font-semibold rounded-xl bg-white border border-black/20 outline-none"
+                          />
+                        ))}
+                      </div>
+                      <motion.button
+                        onClick={() => handleVerifyOtp()}
+                        disabled={loading}
+                        whileHover={{ scale: loading ? 1 : 1.05 }}
+                        whileTap={{ scale: loading ? 1 : 0.95 }}
+                        className={`mt-6 w-full h-11 rounded-xl bg-black text-white font-semibold transition ${
+                          loading
+                            ? "opacity-70 cursor-not-allowed"
+                            : "hover:bg-gray-900 cursor-pointer"
+                        }`}
+                      >
+                        {loading ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Verifying...
+                          </span>
+                        ) : (
+                          "Verify and Create Account"
+                        )}
+                      </motion.button>
+                      <div
+                        onClick={timer === 0 ? handleResendOtp : undefined}
+                        className={`text-center pt-2 ${
+                          timer === 0
+                            ? "cursor-pointer text-blue-500 md:hover:underline"
+                            : "cursor-not-allowed text-gray-400"
+                        }`}
+                      >
+                        {timer > 0 ? `Resend OTP in ${timer}s` : "Resend OTP"}
                       </div>
                     </motion.div>
                   )}
