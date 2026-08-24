@@ -40,7 +40,6 @@ const AuthModel = ({ open, onClose }: propType) => {
     !name.trim() || !email.trim() || !password.trim() || loading;
 
   const data = useSession();
-  console.log(data);
 
   const handleSignup = async () => {
     setLoading(true);

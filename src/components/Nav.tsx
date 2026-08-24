@@ -45,14 +45,16 @@ const Nav = () => {
               );
             })}
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-4 py-1.5 font-semibold rounded-full shadow-xl bg-white text-black cursor-pointer"
-            onClick={() => setAuthOpen(true)}
-          >
-            Login
-          </motion.button>
+          <div className="">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-1.5 font-semibold rounded-full shadow-xl bg-white text-black cursor-pointer"
+              onClick={() => setAuthOpen(true)}
+            >
+              Login
+            </motion.button>
+          </div>
         </div>
       </motion.div>
       <AuthModel open={authOpen} onClose={() => setAuthOpen(false)} />
