@@ -5,3 +5,8 @@
     display: none !important;
   }
 }
+
+/* globals.css */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
