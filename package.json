@@ -13,6 +13,7 @@
     "@types/nodemailer": "^8.0.1",
     "axios": "^1.19.0",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.1",
     "lucide-react": "^1.33.0",
     "mongoose": "^9.9.3",
     "motion": "^13.1.1",
