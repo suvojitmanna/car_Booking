@@ -1,78 +1,43 @@
 import mongoose, { Document, Model } from "mongoose";
 
-type VehicleType = "bike" | "car" | "loading" | "truck" | "auto";
-
-interface IVehicle extends Document {
+interface IPartnerDocs extends Document {
   owner: mongoose.Types.ObjectId;
-  type: VehicleType;
-  vehicleModel: string;
-  number: string;
-  imageUrl?: string;
-  baseFare?: number;
-  pricePerKM?: number;
-  waitingCharge?: number;
+  aadharUrl: string;
+  rcUrl: string;
+  licenseUrl: string;
   status: "approved" | "pending" | "rejected";
   rejectionReason?: string;
-  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const vehicleSchema = new mongoose.Schema<IVehicle>(
+const partnerDocSchema = new mongoose.Schema<IPartnerDocs>(
   {
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-
-    type: {
-      type: String,
-      enum: ["bike", "car", "loading", "truck", "auto"],
-      required: true,
-    },
-
-    vehicleModel: {
+    aadharUrl: {
       type: String,
       required: true,
     },
-
-    number: {
+    rcUrl: {
       type: String,
-      unique: true,
       required: true,
     },
-
-    imageUrl: {
+    licenseUrl: {
       type: String,
+      required: true,
     },
-
-    baseFare: {
-      type: Number,
-      default: 0,
-    },
-
-    pricePerKM: {
-      type: Number,
-    },
-
-    waitingCharge: {
-      type: Number,
-    },
-
     status: {
       type: String,
       enum: ["approved", "pending", "rejected"],
       default: "pending",
     },
-
     rejectionReason: {
       type: String,
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true,
+      default: "",
     },
   },
   {
@@ -80,7 +45,8 @@ const vehicleSchema = new mongoose.Schema<IVehicle>(
   },
 );
 
-const Vehicle =
-  mongoose.models.Vehicle || mongoose.model("Vehicle", vehicleSchema);
+const PartnerDocs =
+  mongoose.models.PartnerDocs ||
+  mongoose.model("PartnerDocs", partnerDocSchema);
 
-export default Vehicle;
+export default PartnerDocs;
