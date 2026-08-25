@@ -10,7 +10,7 @@ export async function proxy(req: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith(".")
+    /\.(png|jpg|jpeg|gif|svg|webp|ico)$/.test(pathname)
   ) {
     return NextResponse.next();
   }
@@ -47,7 +47,7 @@ export async function proxy(req: NextRequest) {
   }
 
   if (pathname.startsWith("/api")) {
-    if (!session.user) {
+    if (!session || !session.user) {
       return NextResponse.json(
         {
           message: "Unauthorized",
