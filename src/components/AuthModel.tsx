@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import axios from "axios";
 import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type propType = {
   open: boolean;
@@ -40,6 +41,7 @@ const AuthModel = ({ open, onClose }: propType) => {
     !name.trim() || !email.trim() || !password.trim() || loading;
 
   const data = useSession();
+  const router = useRouter();
 
   const handleSignup = async () => {
     setLoading(true);
@@ -63,7 +65,12 @@ const AuthModel = ({ open, onClose }: propType) => {
       password,
       redirect: false,
     });
-    console.log(res);
+
+    if (res?.ok) {
+      onClose();
+      router.push("/");
+      router.refresh();
+    }
   };
 
   const handleGoogleLogin = async () => {
