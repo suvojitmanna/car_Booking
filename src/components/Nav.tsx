@@ -7,17 +7,10 @@ import { usePathname } from "next/navigation";
 import AuthModel from "./AuthModel";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../redux/store";
-import {
-  Bike,
-  Car,
-  ChevronRight,
-  LogOut,
-  Menu,
-  Truck,
-  X,
-} from "lucide-react";
+import { Bike, Car, ChevronRight, LogOut, Menu, Truck, X } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { setUserData } from "../redux/userSlice";
+import { useRouter } from "next/navigation";
 
 const Nav_Items = ["home", "booking", "about Us", "contact"];
 
@@ -29,6 +22,8 @@ const Nav = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const dispatch = useDispatch();
+  const router = useRouter();
+
   const handleLogout = async () => {
     await signOut({ redirect: false });
     dispatch(setUserData(null));
@@ -126,7 +121,12 @@ const Nav = () => {
 
                           <div className="h-px bg-gray-100 my-1.5 mx-1" />
                           {userData?.role !== "partner" && (
-                            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left mb-1 cursor-pointer">
+                            <button
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left mb-1 cursor-pointer"
+                              onClick={() =>
+                                router.push("/partner/onboarding/vehicle")
+                              }
+                            >
                               <div className="flex -space-x-2 shrink-0">
                                 <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center border-2 border-white">
                                   <Bike size={14} />
@@ -288,7 +288,10 @@ const Nav = () => {
 
                 <div className="h-px bg-gray-100 my-1.5 mx-1" />
                 {userData?.role !== "partner" && (
-                  <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left mb-1">
+                  <button
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left mb-1"
+                    onClick={() => router.push("/partner/onboarding/vehicle")}
+                  >
                     <div className="flex -space-x-2 shrink-0">
                       <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center border-2 border-white">
                         <Bike size={14} />
