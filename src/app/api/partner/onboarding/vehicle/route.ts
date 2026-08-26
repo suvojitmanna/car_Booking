@@ -1,15 +1,12 @@
 import { auth } from "@/src/auth";
 import connectDb from "@/src/lib/db";
-import Vehicle from "@/src/models/partnerDocs.model";
+import Vehicle from "@/src/models/vehicle.model.ts";
 import User from "@/src/models/user.model";
 import { NextRequest } from "next/server";
-
-const VEHICLE_REGX = /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,2}[0-9]{4}$/;
 
 export async function POST(req: Request) {
   try {
     await connectDb();
-
     const session = await auth();
 
     if (!session || !session.user?.email) {
@@ -17,13 +14,11 @@ export async function POST(req: Request) {
     }
 
     const user = await User.findOne({ email: session.user.email });
-
     if (!user) {
       return Response.json({ message: "User not found" }, { status: 404 });
     }
 
     const { type, number, vehicleModel } = await req.json();
-
     if (!type || !number || !vehicleModel) {
       return Response.json(
         { message: "Missing required details" },
@@ -32,13 +27,6 @@ export async function POST(req: Request) {
     }
 
     const vehicleNumber = String(number).trim().toUpperCase();
-
-    if (!VEHICLE_REGX.test(vehicleNumber)) {
-      return Response.json(
-        { message: "Invalid vehicle number format" },
-        { status: 400 },
-      );
-    }
 
     const duplicate = await Vehicle.findOne({
       number: vehicleNumber,
@@ -52,10 +40,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let vehicle = await Vehicle.findOne({
-      owner: user._id,
-    });
-
+    let vehicle = await Vehicle.findOne({ owner: user._id });
     if (vehicle) {
       vehicle.type = type;
       vehicle.number = vehicleNumber;
@@ -63,7 +48,6 @@ export async function POST(req: Request) {
       vehicle.status = "pending";
 
       await vehicle.save();
-
       return Response.json(vehicle, { status: 200 });
     }
 
@@ -85,12 +69,14 @@ export async function POST(req: Request) {
     return Response.json(vehicle, {
       status: 201,
     });
-  } catch (error) {
-    console.error("Vehicle POST error:", error);
+  } catch (error: any) {
+    console.error("VEHICLE ERROR:", error);
 
     return Response.json(
       {
-        message: "Failed to save vehicle",
+        message: error?.message || "Failed to save vehicle",
+        code: error?.code,
+        keyValue: error?.keyValue,
       },
       { status: 500 },
     );
@@ -100,7 +86,6 @@ export async function POST(req: Request) {
 export async function GET(req: NextRequest) {
   try {
     await connectDb();
-
     const session = await auth();
 
     if (!session || !session.user?.email) {

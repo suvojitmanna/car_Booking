@@ -1,5 +1,13 @@
 "use client";
-import { ArrowLeft, Bike, Car, Package, Truck } from "lucide-react";
+import axios from "axios";
+import {
+  ArrowLeft,
+  Bike,
+  Car,
+  CircleDashed,
+  Package,
+  Truck,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -17,6 +25,43 @@ const Page = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const VEHICLE_REGEX = /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,2}[0-9]{4}$/;
+
+  const handleVehicle = async () => {
+    setError("");
+
+    const number = vehicleNumber.trim().toUpperCase();
+    if (!VEHICLE_REGEX.test(number)) {
+      setError("Invalid vehicle number");
+      return;
+    }
+
+    if (!vehicleType) {
+      setError("Please select a vehicle type");
+      return;
+    }
+
+    if (!vehicleModel.trim()) {
+      setError("Please enter vehicle model");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data } = await axios.post("/api/partner/onboarding/vehicle", {
+        type: vehicleType,
+        number,
+        vehicleModel: vehicleModel.trim(),
+      });
+      setLoading(false);
+    } catch (error: any) {
+      setError(error?.response?.data?.message || "Something went wrong");
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
@@ -59,7 +104,7 @@ const Page = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.96 }}
                     onClick={() => setVehicleType(v.id)}
-                    className={`rounded-2xl border p-4 flex flex-col items-center gap-2 transition ${active ? "bg-black text-white border-black" : "border-gray-200 hover:border-black"}`}
+                    className={`rounded-2xl border p-4 flex flex-col items-center gap-2 transition ${active ? "bg-black text-white border-black" : "border-gray-200 hover:border-black cursor-pointer"}`}
                   >
                     <div
                       className={`w-11 h-11 rounded-full flex items-center justify-center ${active ? "bg-white text-black" : "bg-black text-white"}`}
@@ -85,7 +130,9 @@ const Page = () => {
           </label>
           <input
             type="text"
-            onChange={(e) => setVehicleNumber(e.target.value)}
+            onChange={(e) =>
+              setVehicleNumber(e.target.value.toLocaleUpperCase())
+            }
             value={vehicleNumber}
             placeholder="MH12AB1234"
             id="vn"
@@ -105,13 +152,30 @@ const Page = () => {
             className="mt-2 w-full border-b border-gray-300 pb-2 text-sm focus:outline-none focus:border-black transition"
           />
         </div>
+        {error && (
+          <p className="mt-1 text-red-500 text-sm font-sans">***{error} !!!</p>
+        )}
 
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          className="mt-8 w-full h-14 rounded-2xl bg-black text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-40 transition cursor-pointer"
+          disabled={
+            loading ||
+            !vehicleType ||
+            !vehicleNumber.trim() ||
+            !vehicleModel.trim()
+          }
+          className="mt-4 w-full h-14 rounded-2xl bg-black text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-40 transition disabled:cursor-not-allowed cursor-pointer"
+          onClick={handleVehicle}
         >
-          Continue
+          {loading ? (
+            <>
+              Submitting...
+              <CircleDashed className="text-white animate-spin" />
+            </>
+          ) : (
+            "Continue"
+          )}
         </motion.button>
       </motion.div>
     </div>
