@@ -1,43 +1,78 @@
 import mongoose, { Document, Model } from "mongoose";
 
+type VehicleType = "bike" | "car" | "loading" | "truck" | "auto";
+
 interface IPartnerDocs extends Document {
   owner: mongoose.Types.ObjectId;
-  aadharUrl: string;
-  rcUrl: string;
-  licenseUrl: string;
+  type: VehicleType;
+  vehicleModel: string;
+  number: string;
+  imageUrl?: string;
+  baseFare?: number;
+  pricePerKM?: number;
+  waitingCharge?: number;
   status: "approved" | "pending" | "rejected";
   rejectionReason?: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const partnerDocSchema = new mongoose.Schema<IPartnerDocs>(
+const vehicleSchema = new mongoose.Schema<IPartnerDocs>(
   {
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    aadharUrl: {
+
+    type: {
+      type: String,
+      enum: ["bike", "car", "loading", "truck", "auto"],
+      required: true,
+    },
+
+    vehicleModel: {
       type: String,
       required: true,
     },
-    rcUrl: {
+
+    number: {
       type: String,
+      unique: true,
       required: true,
     },
-    licenseUrl: {
+
+    imageUrl: {
       type: String,
-      required: true,
     },
+
+    baseFare: {
+      type: Number,
+      default: 0,
+    },
+
+    pricePerKM: {
+      type: Number,
+    },
+
+    waitingCharge: {
+      type: Number,
+    },
+
     status: {
       type: String,
       enum: ["approved", "pending", "rejected"],
       default: "pending",
     },
+
     rejectionReason: {
       type: String,
-      default: "",
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {
@@ -45,8 +80,7 @@ const partnerDocSchema = new mongoose.Schema<IPartnerDocs>(
   },
 );
 
-const PartnerDocs =
-  mongoose.models.PartnerDocs ||
-  mongoose.model("PartnerDocs", partnerDocSchema);
+const Vehicle =
+  mongoose.models.Vehicle || mongoose.model("Vehicle", vehicleSchema);
 
-export default PartnerDocs;
+export default Vehicle;

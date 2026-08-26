@@ -28,7 +28,11 @@ const page = () => {
           <h1 className="text-2xl font-bold mt-1">Upload Documents</h1>
 
           <p className="text-sm text-gray-500 mt-2 capitalize">
-            required for verification
+            Required for verification
+          </p>
+
+          <p className="text-xs text-gray-400 mt-1">
+            Each document must be less than 5 MB
           </p>
         </div>
 
