@@ -7,12 +7,15 @@ import {
   CreditCard,
   Landmark,
   Phone,
-  CircleDashed, // Added this import for the loading spinner
+  CircleDashed,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { RiSecurePaymentLine } from "react-icons/ri";
+
+const IFSC_REGX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const UPI_REGX = /^[a-zA-Z0-9.-]{2,256}@[a-zA-Z]{2,64}$/;
 
 const Page = () => {
   const router = useRouter();
@@ -24,6 +27,28 @@ const Page = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const sanitizedIfsc = ifsc.trim().toUpperCase();
+  const sanitizedUpi = upi.trim();
+
+  const isNameValid =
+    accountHolder.trim().length >= 3 || accountHolder.trim() === "";
+  const isAccountValid =
+    (accountNumber.trim().length >= 9 && accountNumber.trim().length <= 12) ||
+    accountNumber.trim() === "";
+  const isIfscValid = IFSC_REGX.test(sanitizedIfsc) || ifsc.trim() === "";
+  const isMobileNumberValid =
+    /^[0-9]{10}$/.test(mobileNumber.trim()) || mobileNumber.trim() === "";
+
+  const isUpiValid = sanitizedUpi === "" || UPI_REGX.test(sanitizedUpi);
+
+  const canSubmit =
+    accountHolder.trim().length >= 3 &&
+    accountNumber.trim().length >= 9 &&
+    accountNumber.trim().length <= 12 &&
+    IFSC_REGX.test(sanitizedIfsc) &&
+    /^[0-9]{10}$/.test(mobileNumber.trim()) &&
+    isUpiValid;
+
   const handleBank = async () => {
     setError("");
     try {
@@ -31,11 +56,12 @@ const Page = () => {
       const { data } = await axios.post("/api/partner/onboarding/bank", {
         accountHolder,
         accountNumber,
-        ifsc,
-        upi,
+        ifsc: sanitizedIfsc,
+        upi: sanitizedUpi,
         mobileNumber,
       });
       setLoading(false);
+      // Optional: router.push('/next-step') or success handling here
     } catch (error: any) {
       setError(
         error?.response?.data?.message || "Something went wrong during upload",
@@ -43,13 +69,6 @@ const Page = () => {
       setLoading(false);
     }
   };
-
-  const isButtonDisabled =
-    loading ||
-    !accountHolder.trim() ||
-    !accountNumber.trim() ||
-    !ifsc.trim() ||
-    !mobileNumber.trim();
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-4 overflow-hidden">
@@ -88,18 +107,27 @@ const Page = () => {
               Account holder name
             </label>
 
-            <div className="flex items-center gap-2 mt-1 border-b border-gray-300 focus-within:border-black transition-colors">
+            <div className="flex items-center gap-2 mt-2">
               <BadgeCheck size={17} className="text-gray-400 shrink-0" />
 
               <input
                 id="accountHolder"
                 type="text"
                 placeholder="As per bank records"
-                className="flex-1 py-1.5 text-sm outline-none bg-transparent"
+                className={`flex-1 py-1.5 text-sm border-b pb-2 outline-none bg-transparent ${
+                  !isNameValid
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-gray-300 focus:border-black"
+                }`}
                 value={accountHolder}
                 onChange={(e) => setAccountHolder(e.target.value)}
               />
             </div>
+            {!isNameValid && accountHolder.length > 0 && (
+              <p className="mt-1 text-xs text-red-500">
+                Minimum 3 characters required
+              </p>
+            )}
           </div>
 
           <div>
@@ -110,18 +138,27 @@ const Page = () => {
               Bank account number
             </label>
 
-            <div className="flex items-center gap-2 mt-1 border-b border-gray-300 focus-within:border-black transition-colors">
+            <div className="flex items-center gap-2 mt-2">
               <CreditCard size={17} className="text-gray-400 shrink-0" />
 
               <input
                 id="accountNumber"
                 type="text"
                 placeholder="Enter account number"
-                className="flex-1 py-1.5 text-sm outline-none bg-transparent"
+                className={`flex-1 py-1.5 text-sm border-b pb-2 outline-none bg-transparent ${
+                  !isAccountValid
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-gray-300 focus:border-black"
+                }`}
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
               />
             </div>
+            {!isAccountValid && accountNumber.length > 0 && (
+              <p className="mt-1 text-xs text-red-500">
+                Account number must be between 9 and 12 digits
+              </p>
+            )}
           </div>
 
           <div>
@@ -132,18 +169,27 @@ const Page = () => {
               IFSC code
             </label>
 
-            <div className="flex items-center gap-2 mt-1 border-b border-gray-300 focus-within:border-black transition-colors">
+            <div className="flex items-center gap-2 mt-1 ">
               <Landmark size={17} className="text-gray-400 shrink-0" />
 
               <input
                 id="ifsc"
                 type="text"
                 placeholder="HDFC0001234"
-                className="flex-1 py-1.5 text-sm outline-none bg-transparent uppercase"
+                className={`flex-1 py-1.5 text-sm border-b pb-2 outline-none bg-transparent ${
+                  !isIfscValid
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-gray-300 focus:border-black"
+                }`}
                 value={ifsc}
                 onChange={(e) => setIfsc(e.target.value)}
               />
             </div>
+            {!isIfscValid && ifsc.length > 0 && (
+              <p className="mt-1 text-xs text-red-500">
+                Enter a valid 11-character IFSC code
+              </p>
+            )}
           </div>
 
           <div>
@@ -154,7 +200,7 @@ const Page = () => {
               Mobile number
             </label>
 
-            <div className="flex items-center gap-2 mt-1 border-b border-gray-300 focus-within:border-black transition-colors">
+            <div className="flex items-center gap-2 mt-2">
               <Phone size={17} className="text-gray-400 shrink-0" />
 
               <input
@@ -162,11 +208,20 @@ const Page = () => {
                 type="tel"
                 placeholder="10 digit mobile number"
                 maxLength={10}
-                className="flex-1 py-1.5 text-sm outline-none bg-transparent"
+                className={`flex-1 py-1.5 text-sm border-b pb-2 outline-none bg-transparent ${
+                  !isMobileNumberValid
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-gray-300 focus:border-black"
+                }`}
                 value={mobileNumber}
                 onChange={(e) => setMobileNumber(e.target.value)}
               />
             </div>
+            {!isMobileNumberValid && mobileNumber.length > 0 && (
+              <p className="mt-1 text-xs text-red-500">
+                Enter a valid 10-digit mobile number
+              </p>
+            )}
           </div>
 
           <div>
@@ -177,7 +232,7 @@ const Page = () => {
               UPI ID <span className="font-normal">(optional)</span>
             </label>
 
-            <div className="flex items-center gap-2 mt-1 border-b border-gray-300 focus-within:border-black transition-colors">
+            <div className="flex items-center gap-2 mt-2">
               <RiSecurePaymentLine
                 size={18}
                 className="text-gray-400 shrink-0"
@@ -187,11 +242,18 @@ const Page = () => {
                 id="upi"
                 type="text"
                 placeholder="upi@gmail.com"
-                className="flex-1 py-1.5 text-sm outline-none bg-transparent"
+                className={`flex-1 py-1.5 text-sm border-b pb-2 outline-none bg-transparent ${
+                  !isUpiValid
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-gray-300 focus:border-black"
+                }`}
                 value={upi}
                 onChange={(e) => setUpi(e.target.value)}
               />
             </div>
+            {!isUpiValid && upi.length > 0 && (
+              <p className="mt-1 text-xs text-red-500">Enter a valid UPI ID</p>
+            )}
           </div>
         </div>
 
@@ -214,7 +276,7 @@ const Page = () => {
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleBank}
-          disabled={isButtonDisabled}
+          disabled={!canSubmit || loading}
           className="mt-5 w-full h-12 rounded-xl bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
         >
           {loading ? (
