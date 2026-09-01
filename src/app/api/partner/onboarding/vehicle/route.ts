@@ -33,13 +33,6 @@ export async function POST(req: Request) {
       owner: { $ne: user._id },
     });
 
-    if (duplicate) {
-      return Response.json(
-        { message: "Vehicle number already registered" },
-        { status: 409 },
-      );
-    }
-
     let vehicle = await Vehicle.findOne({ owner: user._id });
     if (vehicle) {
       vehicle.type = type;
@@ -51,6 +44,12 @@ export async function POST(req: Request) {
       return Response.json(vehicle, { status: 200 });
     }
 
+    if (duplicate) {
+      return Response.json(
+        { message: "Vehicle number already registered" },
+        { status: 409 },
+      );
+    }
     vehicle = await Vehicle.create({
       owner: user._id,
       type,

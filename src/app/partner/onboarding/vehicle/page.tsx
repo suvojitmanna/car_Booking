@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const Page = () => {
   const VEHICLES = [
@@ -62,6 +62,22 @@ const Page = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleGetVehicle = async () => {
+      try {
+        const { data } = await axios.get("/api/partner/onboarding/vehicle");
+        if (data?.vehicle) {
+          setVehicleType(data.vehicle.type || "");
+          setVehicleNumber(data.vehicle.number || "");
+          setVehicleModel(data.vehicle.vehicleModel || "");
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    handleGetVehicle();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
@@ -133,7 +149,7 @@ const Page = () => {
             onChange={(e) =>
               setVehicleNumber(e.target.value.toLocaleUpperCase())
             }
-            value={vehicleNumber}
+            value={vehicleNumber || ""}
             placeholder="MH12AB1234"
             id="vn"
             className="mt-2 w-full border-b border-gray-300 pb-2 text-sm focus:outline-none focus:border-black transition"
@@ -146,7 +162,7 @@ const Page = () => {
           <input
             type="text"
             onChange={(e) => setVehicleModel(e.target.value)}
-            value={vehicleModel}
+            value={vehicleModel || ""}
             placeholder="Tata Ace"
             id="vm"
             className="mt-2 w-full border-b border-gray-300 pb-2 text-sm focus:outline-none focus:border-black transition"

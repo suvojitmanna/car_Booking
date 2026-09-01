@@ -8,7 +8,7 @@ import AuthModel from "./AuthModel";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import { Bike, Car, ChevronRight, LogOut, Menu, Truck, X } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { setUserData } from "../redux/userSlice";
 import { useRouter } from "next/navigation";
 
@@ -17,12 +17,19 @@ const Nav_Items = ["home", "booking", "about Us", "contact"];
 const Nav = () => {
   const pathName = usePathname();
   const [authOpen, setAuthOpen] = useState(false);
+  const { data: session } = useSession();
   const userData = useSelector((state: RootState) => state.user.userData);
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const dispatch = useDispatch();
   const router = useRouter();
+
+  const currentUser = userData || session?.user || null;
+  const profilePic = userData?.profilePicture || session?.user?.image || "";
+  const userName = userData?.name || session?.user?.name || "User";
+  const userEmail = userData?.email || session?.user?.email || "";
+  const userRole = userData?.role || (session?.user as any)?.role || "user";
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
@@ -66,11 +73,11 @@ const Nav = () => {
 
           <div className="flex items-center gap-3 relative">
             <div className="hidden md:block relative">
-              {!userData ? (
+              {!currentUser ? (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-4 py-1.5 font-semibold rounded-full shadow-xl bg-white text-black cursor-pointer shrink-0 cursor-pointer"
+                  className="px-5 py-2 font-semibold rounded-full shadow-xl bg-white text-black cursor-pointer shrink-0"
                   onClick={() => setAuthOpen(true)}
                 >
                   Login
@@ -78,24 +85,25 @@ const Nav = () => {
               ) : (
                 <>
                   <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setProfileOpen((p) => !p)}
-                    className="w-11 h-11 rounded-full bg-white cursor-pointer"
+                    className="flex items-center justify-center p-0.5 rounded-full ring-2 ring-white/25 hover:ring-white transition-all cursor-pointer shadow-lg bg-[#0B0B0B]"
+                    aria-label="User profile menu"
                   >
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white text-black shadow-lg">
-                      {userData.profilePicture ? (
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-linear-to-tr from-gray-800 to-gray-600 text-white font-semibold text-base shadow-inner">
+                      {profilePic ? (
                         <Image
-                          src={userData.profilePicture}
-                          alt={userData.name}
+                          src={profilePic}
+                          alt={userName}
                           width={40}
                           height={40}
-                          className="w-10 h-10 rounded-full object-cover"
+                          referrerPolicy="no-referrer"
+                          unoptimized
+                          className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="font-semibold text-lg text-black">
-                          {userData.name?.charAt(0)?.toUpperCase()}
-                        </span>
+                        <span>{userName?.charAt(0)?.toUpperCase()}</span>
                       )}
                     </div>
                   </motion.button>
@@ -107,25 +115,51 @@ const Nav = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-14 right-0 w-[300px] bg-white text-black rounded-2xl shadow-2xl border border-gray-200"
+                        className="absolute top-14 right-0 w-[300px] bg-white text-black rounded-3xl shadow-2xl border border-gray-200 overflow-hidden"
                       >
-                        <div className="p-2">
-                          <div className="px-3 py-2.5">
-                            <p className="font-semibold text-base truncate">
-                              {userData.name}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {userData.role}
-                            </p>
+                        <div className="p-3">
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
+                            <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-black text-white font-bold text-base shadow-sm ring-2 ring-gray-200">
+                              {profilePic ? (
+                                <Image
+                                  src={profilePic}
+                                  alt={userName}
+                                  width={44}
+                                  height={44}
+                                  referrerPolicy="no-referrer"
+                                  unoptimized
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>{userName.charAt(0).toUpperCase()}</span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <p className="font-semibold text-sm text-gray-900 truncate">
+                                  {userName}
+                                </p>
+                                <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-black text-white shrink-0">
+                                  {userRole}
+                                </span>
+                              </div>
+                              {userEmail && (
+                                <p className="text-xs text-gray-500 truncate mt-0.5">
+                                  {userEmail}
+                                </p>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="h-px bg-gray-100 my-1.5 mx-1" />
-                          {userData?.role !== "partner" && (
+                          <div className="h-px bg-gray-100 my-2" />
+
+                          {userRole !== "partner" ? (
                             <button
-                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left mb-1 cursor-pointer"
-                              onClick={() =>
-                                router.push("/partner/onboarding/vehicle")
-                              }
+                              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl hover:bg-gray-50 transition-colors text-left group cursor-pointer"
+                              onClick={() => {
+                                setProfileOpen(false);
+                                router.push("/partner/onboarding/vehicle");
+                              }}
                             >
                               <div className="flex -space-x-2 shrink-0">
                                 <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center border-2 border-white">
@@ -138,19 +172,38 @@ const Nav = () => {
                                   <Truck size={14} />
                                 </div>
                               </div>
-                              <span className="text-sm font-medium whitespace-nowrap">
+                              <span className="text-sm font-medium text-gray-800 group-hover:text-black">
                                 Become a partner
                               </span>
                               <ChevronRight
                                 size={16}
-                                className="ml-auto shrink-0 text-gray-400"
+                                className="ml-auto shrink-0 text-gray-400 group-hover:translate-x-0.5 transition-transform"
+                              />
+                            </button>
+                          ) : (
+                            <button
+                              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl hover:bg-gray-50 transition-colors text-left group cursor-pointer"
+                              onClick={() => {
+                                setProfileOpen(false);
+                                router.push("/partner/onboarding/vehicle");
+                              }}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+                                <Car size={16} />
+                              </div>
+                              <span className="text-sm font-medium text-gray-800 group-hover:text-black">
+                                Partner Dashboard
+                              </span>
+                              <ChevronRight
+                                size={16}
+                                className="ml-auto shrink-0 text-gray-400 group-hover:translate-x-0.5 transition-transform"
                               />
                             </button>
                           )}
 
                           <button
                             onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors text-sm font-medium cursor-pointer"
+                            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-red-600 hover:bg-red-50 transition-colors text-sm font-medium cursor-pointer mt-1"
                           >
                             <LogOut size={17} />
                             <span>Logout</span>
@@ -164,7 +217,7 @@ const Nav = () => {
             </div>
 
             <div className="md:hidden">
-              {!userData ? (
+              {!currentUser ? (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -174,30 +227,28 @@ const Nav = () => {
                   Login
                 </motion.button>
               ) : (
-                <>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setProfileOpen((p) => !p)}
-                    className="w-11 h-11 rounded-full bg-white"
-                  >
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white text-black shadow-lg">
-                      {userData.profilePicture ? (
-                        <Image
-                          src={userData.profilePicture}
-                          alt={userData.name}
-                          width={40}
-                          height={40}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="font-semibold text-lg text-black">
-                          {userData.name?.charAt(0)?.toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </motion.button>
-                </>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setProfileOpen((p) => !p)}
+                  className="flex items-center justify-center p-0.5 rounded-full ring-2 ring-white/25 cursor-pointer shadow-md bg-[#0B0B0B]"
+                >
+                  <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gray-700 text-white font-semibold text-sm">
+                    {profilePic ? (
+                      <Image
+                        src={profilePic}
+                        alt={userName}
+                        width={36}
+                        height={36}
+                        referrerPolicy="no-referrer"
+                        unoptimized
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{userName?.charAt(0)?.toUpperCase()}</span>
+                    )}
+                  </div>
+                </motion.button>
               )}
             </div>
 
@@ -260,7 +311,7 @@ const Nav = () => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {profileOpen && userData && (
+        {profileOpen && currentUser && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -274,23 +325,51 @@ const Nav = () => {
               animate={{ y: 0 }}
               exit={{ y: 400 }}
               transition={{ type: "spring", damping: 25 }}
-              className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-2xl z-50 md:hidden"
+              className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-2xl z-50 md:hidden overflow-hidden"
             >
-              <div className="p-2">
-                <div className="px-3 py-2.5">
-                  <p className="font-semibold text-base truncate">
-                    {userData.name}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {userData.role}
-                  </p>
+              <div className="p-4">
+                <div className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-2xl">
+                  <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-black text-white font-bold text-lg shadow-sm ring-2 ring-gray-200">
+                    {profilePic ? (
+                      <Image
+                        src={profilePic}
+                        alt={userName}
+                        width={48}
+                        height={48}
+                        referrerPolicy="no-referrer"
+                        unoptimized
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{userName.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="font-semibold text-base text-gray-900 truncate">
+                        {userName}
+                      </p>
+                      <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-black text-white shrink-0">
+                        {userRole}
+                      </span>
+                    </div>
+                    {userEmail && (
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
+                        {userEmail}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="h-px bg-gray-100 my-1.5 mx-1" />
-                {userData?.role !== "partner" && (
+                <div className="h-px bg-gray-100 my-2.5" />
+
+                {userRole !== "partner" ? (
                   <button
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left mb-1"
-                    onClick={() => router.push("/partner/onboarding/vehicle")}
+                    className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      router.push("/partner/onboarding/vehicle");
+                    }}
                   >
                     <div className="flex -space-x-2 shrink-0">
                       <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center border-2 border-white">
@@ -303,8 +382,27 @@ const Nav = () => {
                         <Truck size={14} />
                       </div>
                     </div>
-                    <span className="text-sm font-medium whitespace-nowrap">
+                    <span className="text-sm font-medium whitespace-nowrap text-gray-800">
                       Become a partner
+                    </span>
+                    <ChevronRight
+                      size={16}
+                      className="ml-auto shrink-0 text-gray-400"
+                    />
+                  </button>
+                ) : (
+                  <button
+                    className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      router.push("/partner/onboarding/vehicle");
+                    }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+                      <Car size={16} />
+                    </div>
+                    <span className="text-sm font-medium text-gray-800">
+                      Partner Dashboard
                     </span>
                     <ChevronRight
                       size={16}
@@ -315,7 +413,7 @@ const Nav = () => {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
+                  className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-red-600 hover:bg-red-50 transition-colors text-sm font-medium cursor-pointer mt-1"
                 >
                   <LogOut size={17} />
                   <span>Logout</span>

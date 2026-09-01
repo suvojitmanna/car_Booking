@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { RiSecurePaymentLine } from "react-icons/ri";
 
 const IFSC_REGX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-const UPI_REGX = /^[a-zA-Z0-9.-]{2,256}@[a-zA-Z]{2,64}$/;
+const UPI_REGX = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9.\-_]{2,64}$/;
 
 const Page = () => {
   const router = useRouter();
@@ -61,7 +61,6 @@ const Page = () => {
         mobileNumber,
       });
       setLoading(false);
-      // Optional: router.push('/next-step') or success handling here
     } catch (error: any) {
       setError(
         error?.response?.data?.message || "Something went wrong during upload",
@@ -69,6 +68,24 @@ const Page = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const getBank = async () => {
+      try {
+        const { data } = await axios.get("/api/partner/onboarding/bank");
+        if (data?.partnerBank) {
+          setAccountHolder(data.partnerBank.accountHolder || "");
+          setAccountNumber(data.partnerBank.accountNumber || "");
+          setIfsc(data.partnerBank.ifsc || "");
+          setUpi(data.partnerBank.upi || "");
+          setMobileNumber(data.partnerBank.mobileNumber || "");
+        }
+      } catch (error) {
+        console.error("Error fetching bank details:", error);
+      }
+    };
+    getBank();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-4 overflow-hidden">

@@ -71,7 +71,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
         });
 
-        const googleImage = profile?.picture as string | undefined;
+        const googleImage = (profile?.picture || (profile as any)?.avatar_url || user?.image) as string | undefined;
 
         if (!dbUser) {
           const newUser = await User.create({
@@ -102,6 +102,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.name = user.name;
         token.email = user.email;
         token.role = user.role;
+        token.picture = user.image || (user as any).profilePicture || token.picture;
       }
 
       return token;
@@ -113,6 +114,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.name = token.name;
         session.user.email = token.email as string;
         session.user.role = token.role as "user" | "partner" | "admin";
+        session.user.image = (token.picture as string) || session.user.image;
       }
 
       return session;

@@ -97,18 +97,20 @@ export async function GET(req: NextRequest) {
     }
 
     return Response.json(
-      {
-        partnerBank: {
-          id: partnerBank._id,
-          accountHolder: partnerBank.accountHolder,
-          accountNumber: `XXXXXX${partnerBank.accountNumber.slice(-4)}`,
-          ifsc: partnerBank.ifsc,
-          upi: partnerBank.upi,
-          status: partnerBank.status,
-        },
-      },
-      { status: 200 },
-    );
+  {
+    partnerBank: {
+      id: partnerBank._id,
+      accountHolder: partnerBank.accountHolder,
+      accountNumber: partnerBank.accountNumber,
+      ifsc: partnerBank.ifsc,
+      upi: partnerBank.upi,
+      mobileNumber: user.mobileNumber || "",
+      status: partnerBank.status,
+    },
+  },
+  { status: 200 },
+);
+
   } catch (error) {
     console.error("Get partner bank error:", error);
     return Response.json(
