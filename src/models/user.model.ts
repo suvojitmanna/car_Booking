@@ -10,7 +10,8 @@ export interface IUser extends Document {
   isEmailVerified?: boolean;
   otpExpiresAt?: Date;
   partnerOnBoardingSteps: number;
-  mobileNumber:string
+  mobileNumber: string;
+  partnerStatus: "pending" | "approved" | "rejected";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,8 +46,8 @@ const userSchema = new mongoose.Schema<IUser>(
       type: Boolean,
       default: false,
     },
-    mobileNumber:{
-      type:String
+    mobileNumber: {
+      type: String,
     },
     otp: {
       type: String,
@@ -57,8 +58,13 @@ const userSchema = new mongoose.Schema<IUser>(
     partnerOnBoardingSteps: {
       type: Number,
       min: 0,
-      max:8,
-      default:0
+      max: 8,
+      default: 0,
+    },
+    partnerStatus: {
+      type: String,
+      default: "pending",
+      enum: ["pending", "approved", "rejected"],
     },
   },
   {

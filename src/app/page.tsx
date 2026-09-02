@@ -10,13 +10,20 @@ export default async function Home() {
   const session = await auth();
   return (
     <div className="w-full min-h-screen">
-      <Nav />
       {session?.user?.role == "partner" ? (
-        <PartnerDashboard />
+        <>
+          <Nav />
+          <PartnerDashboard />
+        </>
       ) : session?.user?.role == "admin" ? (
-        <AdminDashboard />
+        <>
+          <AdminDashboard />
+        </>
       ) : (
-        <PublicHome />
+        <>
+          <Nav />
+          <PublicHome />
+        </>
       )}
 
       <Footer />
