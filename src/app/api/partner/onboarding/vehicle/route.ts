@@ -33,41 +33,46 @@ export async function POST(req: Request) {
       owner: { $ne: user._id },
     });
 
-    let vehicle = await Vehicle.findOne({ owner: user._id });
-    if (vehicle) {
-      vehicle.type = type;
-      vehicle.number = vehicleNumber;
-      vehicle.vehicleModel = vehicleModel;
-      vehicle.status = "pending";
-
-      await vehicle.save();
-      return Response.json(vehicle, { status: 200 });
-    }
-
     if (duplicate) {
       return Response.json(
         { message: "Vehicle number already registered" },
         { status: 409 },
       );
     }
-    vehicle = await Vehicle.create({
-      owner: user._id,
-      type,
-      number: vehicleNumber,
-      vehicleModel,
-      status: "pending",
-    });
+
+    let vehicle = await Vehicle.findOne({ owner: user._id });
+    const isUpdate = !!vehicle;
+
+    if (vehicle) {
+      vehicle.type = type;
+      vehicle.number = vehicleNumber;
+      vehicle.vehicleModel = vehicleModel;
+      vehicle.status = "pending";
+      await vehicle.save();
+    } else {
+      vehicle = await Vehicle.create({
+        owner: user._id,
+        type,
+        number: vehicleNumber,
+        vehicleModel,
+        status: "pending",
+      });
+    }
 
     if (user.partnerOnBoardingSteps < 1) {
       user.partnerOnBoardingSteps = 1;
+    } else if (user.partnerOnBoardingSteps >= 3) {
+      user.partnerOnBoardingSteps = 3;
     }
 
     user.role = "partner";
+    user.partnerStatus = "pending";
     await user.save();
 
-    return Response.json(vehicle, {
-      status: 201,
-    });
+    return Response.json(
+      { vehicle, user, isUpdate },
+      { status: isUpdate ? 200 : 201 },
+    );
   } catch (error: any) {
     console.error("VEHICLE ERROR:", error);
 

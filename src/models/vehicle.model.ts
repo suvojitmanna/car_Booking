@@ -2,7 +2,7 @@ import mongoose, { Document, Model } from "mongoose";
 
 type VehicleType = "bike" | "car" | "loading" | "truck" | "auto";
 
-interface IPartnerDocs extends Document {
+export interface IVehicle extends Document {
   owner: mongoose.Types.ObjectId;
   type: VehicleType;
   vehicleModel: string;
@@ -18,7 +18,7 @@ interface IPartnerDocs extends Document {
   updatedAt: Date;
 }
 
-const vehicleSchema = new mongoose.Schema<IPartnerDocs>(
+const vehicleSchema = new mongoose.Schema<IVehicle>(
   {
     owner: {
       type: mongoose.Schema.Types.ObjectId,

@@ -13,12 +13,18 @@ import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { RiSecurePaymentLine } from "react-icons/ri";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/src/redux/store";
+import { setUserData } from "@/src/redux/userSlice";
 
 const IFSC_REGX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const UPI_REGX = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9.\-_]{2,64}$/;
 
 const Page = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { userData } = useSelector((state: RootState) => state.user);
+
   const [accountHolder, setAccountHolder] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [ifsc, setIfsc] = useState("");
@@ -61,6 +67,12 @@ const Page = () => {
         mobileNumber,
       });
       setLoading(false);
+
+      if (data?.user) {
+        dispatch(setUserData(data.user));
+      }
+
+      router.push("/");
     } catch (error: any) {
       setError(
         error?.response?.data?.message || "Something went wrong during upload",
@@ -298,6 +310,8 @@ const Page = () => {
         >
           {loading ? (
             <CircleDashed className="text-white animate-spin" size={20} />
+          ) : (userData?.partnerOnBoardingSteps ?? 0) === 3 ? (
+            "Update & Back to Review"
           ) : (
             "Continue"
           )}

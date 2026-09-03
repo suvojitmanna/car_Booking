@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const existingBank = await PartnerBank.findOne({ owner: user._id });
+    const isUpdate = !!existingBank;
+
     const partnerBank = await PartnerBank.findOneAndUpdate(
       { owner: user._id },
       {
@@ -51,12 +54,15 @@ export async function POST(req: NextRequest) {
     if (user.partnerOnBoardingSteps < 3) {
       user.partnerOnBoardingSteps = 3;
     }
+    user.partnerStatus = "pending";
 
     await user.save();
     return Response.json(
       {
         message: "Bank details saved successfully",
         partnerBank,
+        user,
+        isUpdate,
       },
       { status: 200 },
     );

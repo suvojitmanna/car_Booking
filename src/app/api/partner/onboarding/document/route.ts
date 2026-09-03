@@ -95,6 +95,9 @@ export async function POST(req: NextRequest) {
       status: "pending",
     };
 
+    const existingDocs = await PartnerDocs.findOne({ owner: user._id });
+    const isUpdate = !!existingDocs;
+
     const partnerDocs = await PartnerDocs.findOneAndUpdate(
       { owner: user._id },
       { $set: updatePayload },
@@ -106,12 +109,16 @@ export async function POST(req: NextRequest) {
     );
     if (user.partnerOnBoardingSteps < 2) {
       user.partnerOnBoardingSteps = 2;
-      await user.save();
+    } else if (user.partnerOnBoardingSteps >= 3) {
+      user.partnerOnBoardingSteps = 3;
     }
+    user.partnerStatus = "pending";
+    await user.save();
 
-    return Response.json(partnerDocs, {
-      status: 200,
-    });
+    return Response.json(
+      { partnerDocs, user, isUpdate },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("Partner documents upload error:", error);
     return Response.json(

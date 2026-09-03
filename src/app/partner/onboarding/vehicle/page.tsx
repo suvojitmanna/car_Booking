@@ -11,6 +11,9 @@ import {
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/src/redux/store";
+import { setUserData } from "@/src/redux/userSlice";
 
 const Page = () => {
   const VEHICLES = [
@@ -22,6 +25,9 @@ const Page = () => {
   ];
 
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { userData } = useSelector((state: RootState) => state.user);
+
   const [vehicleType, setVehicleType] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
@@ -57,6 +63,21 @@ const Page = () => {
         vehicleModel: vehicleModel.trim(),
       });
       setLoading(false);
+
+      if (data?.user) {
+        dispatch(setUserData(data.user));
+      }
+
+      const steps =
+        data?.user?.partnerOnBoardingSteps ??
+        userData?.partnerOnBoardingSteps ??
+        0;
+
+      if (steps === 3) {
+        router.push("/");
+      } else {
+        router.push("/partner/onboarding/documents");
+      }
     } catch (error: any) {
       setError(error?.response?.data?.message || "Something went wrong");
       setLoading(false);
@@ -189,6 +210,8 @@ const Page = () => {
               Submitting...
               <CircleDashed className="text-white animate-spin" />
             </>
+          ) : (userData?.partnerOnBoardingSteps ?? 0) === 3 ? (
+            "Update & Back to Review"
           ) : (
             "Continue"
           )}

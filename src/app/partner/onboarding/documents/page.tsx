@@ -4,11 +4,17 @@ import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FileCheck, UploadCloud, CircleDashed } from "lucide-react";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/src/redux/store";
+import { setUserData } from "@/src/redux/userSlice";
 
 type DocsType = "aadhar" | "license" | "rc";
 
 const Page = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { userData } = useSelector((state: RootState) => state.user);
+
   const [docs, setDocs] = useState<Record<DocsType, File | null>>({
     aadhar: null,
     license: null,
@@ -50,6 +56,21 @@ const Page = () => {
         formdata,
       );
       setLoading(false);
+
+      if (data?.user) {
+        dispatch(setUserData(data.user));
+      }
+
+      const steps =
+        data?.user?.partnerOnBoardingSteps ??
+        userData?.partnerOnBoardingSteps ??
+        0;
+
+      if (steps === 3) {
+        router.push("/");
+      } else {
+        router.push("/partner/onboarding/bank");
+      }
     } catch (error: any) {
       setError(
         error?.response?.data?.message || "Something went wrong during upload",
@@ -217,6 +238,8 @@ const Page = () => {
               Submitting...
               <CircleDashed className="text-white animate-spin" />
             </>
+          ) : (userData?.partnerOnBoardingSteps ?? 0) === 3 ? (
+            "Update & Back to Review"
           ) : (
             "Continue"
           )}
