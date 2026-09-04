@@ -4,9 +4,26 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { ArrowRight, CheckCircle, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const ContainList = ({ data, type }: any) => {
   const router = useRouter();
+
+  const handleStartVideoKyc = async (id: any) => {
+    try {
+      const result = await axios.get(`/api/admin/videoKyc/start/${id}`);
+      if (result.status == 200) {
+        if (result.data?.roomId) {
+          router.push(`/video-kyc/${result.data.roomId}`);
+        } else {
+          window.location.reload();
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   if (data?.length == 0) {
     return (
       <motion.div
@@ -77,20 +94,38 @@ const ContainList = ({ data, type }: any) => {
             </div>
 
             <div className="shrink-0">
-              <motion.div
-                whileTap={{ scale: 0.96 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors cursor-pointer"
-                onClick={() => {
-                  if (type == "partner") {
-                    router.push(`/admin/reviews/partner/${item._id}`);
-                  }
-                  if (type == "vehicle") {
-                    router.push(`/admin/reviews/vehicle/${item._id}`);
-                  }
-                }}
-              >
-                Review <ArrowRight size={15} />
-              </motion.div>
+              {item.videoKycStatus === "pending" ? (
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors cursor-pointer"
+                  onClick={()=>{handleStartVideoKyc(item._id)}}
+                >
+                  Start video kyc <ArrowRight size={15} />
+                </motion.button>
+              ) : item.videoKycStatus === "in_progress" ? (
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors cursor-pointer"
+                  onClick={() => router.push(`/video-kyc/${item.videoKycRoomId}`)}
+                >
+                  Join Video Call <ArrowRight size={15} />
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (type == "partner") {
+                      router.push(`/admin/reviews/partner/${item._id}`);
+                    }
+                    if (type == "vehicle") {
+                      router.push(`/admin/reviews/vehicle/${item._id}`);
+                    }
+                  }}
+                >
+                  Review <ArrowRight size={15} />
+                </motion.button>
+              )}
             </div>
           </motion.div>
         );

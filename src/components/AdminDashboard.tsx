@@ -23,6 +23,7 @@ const AdminDashboard = () => {
   const [pendingKycReview, setPendingKycReview] = useState<any>([]);
   const [vehicleReview, setVehicleReview] = useState<any>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  
   const handleGetData = async () => {
     try {
       const { data } = await axios.get("/api/admin/dashboard");
@@ -35,6 +36,19 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     handleGetData();
+  }, []);
+
+  const handleVideoKycData = async()=>{
+    try {
+      const {data} = await axios.get("/api/admin/videoKyc/pending");
+      setPendingKycReview(data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    handleVideoKycData();
   }, []);
 
   return (
