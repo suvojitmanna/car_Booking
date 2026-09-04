@@ -230,7 +230,6 @@ const VideoKycPage = () => {
                   type="button"
                   className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow"
                   onClick={() => setShowApprovelModel(true)}
-                  router
                 >
                   <CheckCircle size={14} className="shrink-0" />
                   <span>Approve</span>

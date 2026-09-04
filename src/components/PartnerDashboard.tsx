@@ -6,11 +6,13 @@ import { RootState } from "../redux/store";
 import { setUserData } from "../redux/userSlice";
 import axios from "axios";
 import { motion } from "motion/react";
-import { Check, Lock, Clock, XCircle, Video } from "lucide-react";
+import { Check, Lock, Clock, XCircle, Video, IndianRupee } from "lucide-react";
 import { useRouter } from "next/navigation";
 import RejectionCard from "./RejectionCard";
 import StatusCard from "./StatusCard";
 import ActionCard from "./ActionCard";
+import PricingMode from "./PricingMode";
+import { IVehicle } from "../models/vehicle.model";
 
 type Step = {
   id: number;
@@ -35,7 +37,9 @@ const PartnerDashboard = () => {
   const [activeStep, setActiveStep] = useState(1);
   const router = useRouter();
   const dispatch = useDispatch();
-  const [requestLoading,setRequestLoading] = useState(false)
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [vehicleData, setVehicleData] = useState<IVehicle | null>(null);
 
   const { userData } = useSelector((state: RootState) => state.user);
 
@@ -50,7 +54,20 @@ const PartnerDashboard = () => {
         console.error("Error fetching user data:", err);
       }
     };
+
+    const fetchVehicle = async () => {
+      try {
+        const res = await axios.get("/api/partner/onboarding/vehicle");
+        if (res.data?.vehicle) {
+          setVehicleData(res.data.vehicle);
+        }
+      } catch (err) {
+        console.error("Error fetching vehicle:", err);
+      }
+    };
+
     fetchLatestUser();
+    fetchVehicle();
 
     const interval = setInterval(fetchLatestUser, 3500);
     return () => clearInterval(interval);
@@ -76,6 +93,14 @@ const PartnerDashboard = () => {
   }, [userData?.partnerOnBoardingSteps, userData?.partnerStatus]);
 
   const goToStep = (step: Step) => {
+    if (
+      step.id == 6 &&
+      userData?.partnerStatus === "approved" &&
+      userData?.videoKycStatus === "approved"
+    ) {
+      setShowPricing(true);
+      return;
+    }
     if (step.route && step.id <= activeStep) {
       router.push(step.route);
     }
@@ -223,7 +248,53 @@ const PartnerDashboard = () => {
               message={"Admin will initiate video KYC shortly."}
             />
           ))}
+
+        {activeStep == 6 && (
+          <ActionCard
+            icon={<IndianRupee size={18} />}
+            title="Setup Vehicle Pricing & Photo"
+            button="Set Rates"
+            onClick={() => setShowPricing(true)}
+          />
+        )}
+
+        {activeStep == 7 && (
+          <StatusCard
+            icon={<Clock size={20} />}
+            title="Final Review in Progress"
+            message="Your vehicle pricing and profile are under final review. Once approved by admin, your account will go live!"
+          />
+        )}
+
+        {activeStep == 6 && vehicleData?.status == 'rejected' && (
+          <RejectionCard
+            title="Pricing and Vehicle Photo Rejected"
+            reason={vehicleData?.rejectionReason}
+            actionLabel="Edit & submit again"
+            onAction={() => setShowPricing(true)}
+          />
+        )}
       </div>
+      
+      <PricingMode
+        open={showPricing}
+        onClose={() => setShowPricing(false)}
+        data={vehicleData}
+        onSuccess={async () => {
+          try {
+            const { data } = await axios.get(`/api/user/me?t=${Date.now()}`);
+            if (data) {
+              dispatch(setUserData(data));
+            }
+            const res = await axios.get("/api/partner/onboarding/vehicle");
+            if (res.data?.vehicle) {
+              setVehicleData(res.data.vehicle);
+            }
+          } catch (err) {
+            console.error("Error refreshing after pricing update:", err);
+          }
+        }}
+      />
     </div>
   );
 };

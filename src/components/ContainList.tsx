@@ -98,7 +98,9 @@ const ContainList = ({ data, type }: any) => {
                 <motion.button
                   whileTap={{ scale: 0.96 }}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors cursor-pointer"
-                  onClick={()=>{handleStartVideoKyc(item._id)}}
+                  onClick={() => {
+                    handleStartVideoKyc(item._id);
+                  }}
                 >
                   Start video kyc <ArrowRight size={15} />
                 </motion.button>
@@ -106,7 +108,9 @@ const ContainList = ({ data, type }: any) => {
                 <motion.button
                   whileTap={{ scale: 0.96 }}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white text-sm font-semibold transition-colors cursor-pointer"
-                  onClick={() => router.push(`/video-kyc/${item.videoKycRoomId}`)}
+                  onClick={() =>
+                    router.push(`/video-kyc/${item.videoKycRoomId}`)
+                  }
                 >
                   Join Video Call <ArrowRight size={15} />
                 </motion.button>
