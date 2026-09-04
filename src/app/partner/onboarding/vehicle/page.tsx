@@ -1,6 +1,7 @@
 "use client";
 import axios from "axios";
 import {
+  AlertTriangle,
   ArrowLeft,
   Bike,
   Car,
@@ -125,6 +126,21 @@ const Page = () => {
             Add your vehicle information
           </p>
         </div>
+
+        {userData?.partnerStatus === "rejected" &&
+          userData?.rejectionReason && (
+            <div className="mt-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-red-800">
+                  Application Rejected
+                </p>
+                <p className="text-xs sm:text-sm text-gray-700 mt-1 whitespace-pre-line">
+                  {userData.rejectionReason}
+                </p>
+              </div>
+            </div>
+          )}
 
         <div className="mt-8 space-y-6">
           <div>

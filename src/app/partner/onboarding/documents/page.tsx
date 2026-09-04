@@ -2,7 +2,13 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FileCheck, UploadCloud, CircleDashed } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  FileCheck,
+  UploadCloud,
+  CircleDashed,
+} from "lucide-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/src/redux/store";

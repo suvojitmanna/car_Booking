@@ -74,6 +74,9 @@ const Page = () => {
       setVehicleDetails(res.data.vehicle);
       setPartnerDocs(res.data.document);
       setPartnerBank(res.data.bank);
+      if (res.data?.partner?.rejectionReason) {
+        setRejectionReason(res.data.partner.rejectionReason);
+      }
       console.log("Fetched partner review data:", res.data);
     } catch (err) {
       console.error("Error fetching partner review:", err);
@@ -123,7 +126,8 @@ const Page = () => {
       console.log(data);
       setApprovedLoading(false);
       if (data.status === 200) {
-        router.back();
+        setShowApproved(false);
+        handleGetPartner();
       }
     } catch (error) {
       setApprovedLoading(false);
@@ -141,7 +145,8 @@ const Page = () => {
       console.log(data);
       setRejectLoading(false);
       if (data.status === 200) {
-        router.back();
+        setShowReject(false);
+        handleGetPartner();
       }
     } catch (error) {
       setRejectLoading(false);
@@ -265,6 +270,7 @@ const Page = () => {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -4 }}
               className="bg-white rounded-[32px] p-8 shadow-xl space-y-6"
             >
               <div className="flex items-center gap-2 font-semibold">
@@ -289,6 +295,64 @@ const Page = () => {
                   Reject Partner
                 </button>
               </div>
+            </motion.div>
+          )}
+
+          {data?.partner?.partnerStatus === "rejected" && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -4 }}
+              className="bg-red-50/80 border border-red-200 rounded-[32px] p-8 shadow-xl space-y-5"
+            >
+              <div className="flex items-center gap-2 font-semibold text-red-600 text-base">
+                <XCircle size={20} />
+                Partner Rejected
+              </div>
+
+              <div className="bg-white border border-red-100 rounded-2xl p-4 text-sm text-gray-800 space-y-1">
+                <p className="text-xs uppercase tracking-wider font-semibold text-gray-500">
+                  Reason for Rejection:
+                </p>
+                <p className="font-medium text-gray-900 whitespace-pre-line">
+                  {data?.partner?.rejectionReason ||
+                    rejectionReason ||
+                    "No specific reason provided."}
+                </p>
+              </div>
+
+              <div className="flex gap-3 flex-col pt-2">
+                <button
+                  className="py-3 rounded-2xl border border-red-300 font-semibold text-red-700 bg-white hover:bg-red-50 transition cursor-pointer text-sm"
+                  onClick={() => setShowReject(true)}
+                >
+                  Update Rejection Reason
+                </button>
+
+                <button
+                  className="py-3 rounded-2xl bg-linear-to-r from-black to-gray-800 text-white font-semibold hover:opacity-90 transition cursor-pointer text-sm"
+                  onClick={() => setShowApproved(true)}
+                >
+                  Re-review & Approve Partner
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {data?.partner?.partnerStatus === "approved" && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -4 }}
+              className="bg-green-50/80 border border-green-200 rounded-[32px] p-8 shadow-xl space-y-4"
+            >
+              <div className="flex items-center gap-2 font-semibold text-green-700 text-base">
+                <CheckCircle size={20} />
+                Partner Approved
+              </div>
+              <p className="text-sm text-gray-600">
+                This partner has been verified and approved.
+              </p>
             </motion.div>
           )}
         </div>
@@ -383,7 +447,7 @@ const Page = () => {
                 <button
                   className="flex-1 py-2 rounded-2xl flex items-center justify-center gap-2 bg-linear-to-r from-black to-gray-800 text-white font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleReject}
-                  disabled={rejectLoading}
+                  disabled={rejectLoading || !rejectionReason.trim()}
                 >
                   {rejectLoading ? (
                     <CircleDashed className="w-5 h-5 animate-spin text-white" />

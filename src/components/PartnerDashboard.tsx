@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../redux/store";
+import { setUserData } from "../redux/userSlice";
+import axios from "axios";
 import { motion } from "motion/react";
 import { Check, Lock, Clock, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import RejectionCard from "./RejectionCard";
+import StatusCard from "./StatusCard";
 
 type Step = {
   id: number;
@@ -29,13 +33,30 @@ const TOTAL_STEPS = STEPS.length;
 const PartnerDashboard = () => {
   const [activeStep, setActiveStep] = useState(1);
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const { userData } = useSelector((state: RootState) => state.user);
 
   useEffect(() => {
+    const fetchLatestUser = async () => {
+      try {
+        const { data } = await axios.get(`/api/user/me?t=${Date.now()}`);
+        if (data) {
+          dispatch(setUserData(data));
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    };
+    fetchLatestUser();
+  }, [dispatch]);
+
+  useEffect(() => {
     if (!userData) return;
 
-    if (
+    if (userData.partnerStatus === "rejected") {
+      setActiveStep(4);
+    } else if (
       userData.partnerStatus === "approved" &&
       (userData.partnerOnBoardingSteps ?? 0) >= 4
     ) {
@@ -59,12 +80,12 @@ const PartnerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-100 to-gray-200 px-4 pt-28 pb-20">
-      <div className="max-w-7xl mx-auto space-y-16">
+      <div className="max-w-7xl mx-auto space-y-13">
         <div>
           <h1 className="text-4xl font-bold">Partner Onboarding</h1>
 
-          <p className="text-gray-600 mt-3">
-            Complete all steps to activate your account
+          <p className="text-gray-600 mt-1">
+            Complete all the following steps to get your account activated
           </p>
         </div>
 
@@ -130,61 +151,23 @@ const PartnerDashboard = () => {
           </div>
         </div>
 
-        {activeStep === 4 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`rounded-3xl p-8 shadow-xl border flex flex-col md:flex-row items-center justify-between gap-6 ${
-              userData?.partnerStatus === "rejected"
-                ? "bg-red-50/60 border-red-200"
-                : "bg-white border-gray-100"
-            }`}
-          >
-            <div className="flex items-center gap-5">
-              <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
-                  userData?.partnerStatus === "rejected"
-                    ? "bg-red-100 text-red-600"
-                    : "bg-amber-50 text-amber-600"
-                }`}
-              >
-                {userData?.partnerStatus === "rejected" ? (
-                  <XCircle size={28} />
-                ) : (
-                  <Clock size={28} />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {userData?.partnerStatus === "rejected"
-                      ? "Application Rejected"
-                      : "Application Under Review"}
-                  </h2>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      userData?.partnerStatus === "rejected"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {userData?.partnerStatus === "rejected"
-                      ? "Rejected"
-                      : "Pending Approval"}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  {userData?.partnerStatus === "rejected"
-                    ? userData?.rejectionReason ||
-                      "Your application was rejected. Please review and update your details above."
-                    : "Your vehicle details, documents, and bank account have been submitted and are currently under review."}
-                </p>
-              </div>
-            </div>
-            <div className="text-xs text-gray-400 text-center md:text-right shrink-0">
-              Need changes? Click any completed step above to update.
-            </div>
-          </motion.div>
+        {userData?.partnerStatus === "rejected" && (
+          <RejectionCard
+            title="Partner Application Rejected"
+            reason={userData?.rejectionReason}
+            actionLabel={`Review and update Application`}
+            onAction={() => {
+              router.push("/partner/onboarding/vehicle");
+            }}
+          />
+        )}
+
+        {userData?.partnerStatus === "pending" && (
+          <StatusCard
+            icon={<Clock size={20} />}
+            title="Application Pending"
+            message="Your application is currently under review. We will notify you once it is approved."
+          />
         )}
       </div>
     </div>

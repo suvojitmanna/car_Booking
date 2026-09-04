@@ -1,6 +1,8 @@
 import { auth } from "@/src/auth";
 import connectDb from "@/src/lib/db";
 import User from "@/src/models/user.model";
+import PartnerDocs from "@/src/models/partnerDocs.model";
+import Vehicle from "@/src/models/vehicle.model";
 import { NextRequest } from "next/server";
 
 export async function POST(
@@ -21,28 +23,42 @@ export async function POST(
       return Response.json({ message: "partner not found", status: 400 });
     }
 
-    if (
-      partner.partnerStatus === "approved" ||
-      partner.partnerStatus === "rejected"
-    ) {
-      return Response.json({
-        message: "partner already approved or rejected",
-        status: 400,
-      });
-    }
+    const reason =
+      rejectionReason && typeof rejectionReason === "string" && rejectionReason.trim().length > 0
+        ? rejectionReason.trim()
+        : "Application details did not meet the verification requirements.";
 
-    partner.partnerStatus = "rejected";
-    partner.rejectionReason = rejectionReason;
-    await partner.save();
+    const updatedPartner = await User.findByIdAndUpdate(
+      partnerId,
+      {
+        $set: {
+          partnerStatus: "rejected",
+          rejectionReason: reason,
+          partnerOnBoardingSteps: 3,
+        },
+      },
+      { new: true },
+    );
+
+    await PartnerDocs.findOneAndUpdate(
+      { owner: partner._id },
+      { $set: { status: "rejected", rejectionReason: reason } },
+    );
+
+    await Vehicle.findOneAndUpdate(
+      { owner: partner._id },
+      { $set: { status: "rejected", rejectionReason: reason } },
+    );
 
     return Response.json({
       message: "partner rejected successfully",
       status: 200,
+      partner: updatedPartner,
     });
   } catch (error) {
     console.log(error);
     return Response.json({
-      message: `error while rejecting partner${error}`,
+      message: `error while rejecting partner: ${error}`,
       status: 500,
     });
   }
