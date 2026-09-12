@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* globals.css */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
