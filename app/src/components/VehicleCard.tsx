@@ -18,30 +18,35 @@ import { motion } from "motion/react";
 
 const TYPE_CONFIG: Record<
   string,
-  { icon: React.ElementType; label: string; accent: string }
+  { icon: React.ElementType; emoji: string; label: string; accent: string }
 > = {
   bike: {
     icon: Bike,
+    emoji: "🏍️",
     label: "Bike",
     accent: "from-amber-500/10 to-orange-500/5",
   },
   auto: {
     icon: Car,
+    emoji: "🛺",
     label: "Auto",
     accent: "from-emerald-500/10 to-teal-500/5",
   },
   car: {
     icon: Car,
+    emoji: "🚗",
     label: "Car",
     accent: "from-blue-500/10 to-indigo-500/5",
   },
   loading: {
     icon: Truck,
+    emoji: "🚚",
     label: "Loading",
     accent: "from-purple-500/10 to-violet-500/5",
   },
   truck: {
     icon: Truck,
+    emoji: "🚛",
     label: "Truck",
     accent: "from-rose-500/10 to-red-500/5",
   },
@@ -122,8 +127,8 @@ const VehicleCard: React.FC<VehicleCardProps> = ({vehicle,distance,onBook,select
           />
         ) : (
           <div className="relative z-10 flex flex-col items-center justify-center">
-            <div className="w-20 h-20 rounded-3xl bg-white border border-zinc-200/80 shadow-md flex items-center justify-center text-zinc-800">
-              <CategoryIcon size={38} strokeWidth={1.75} />
+            <div className="w-20 h-20 rounded-3xl bg-white border border-zinc-200/80 shadow-md flex items-center justify-center text-4xl select-none">
+              <span>{config.emoji || "🚗"}</span>
             </div>
           </div>
         )}
@@ -135,7 +140,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({vehicle,distance,onBook,select
         </div>
 
         <div className="absolute bottom-3 right-3.5 z-20 flex items-center gap-1.5 bg-zinc-900 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
-          <CategoryIcon size={11} />
+          <span className="text-xs leading-none">{config.emoji}</span>
           <span>{label}</span>
         </div>
       </div>

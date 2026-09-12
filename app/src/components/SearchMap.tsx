@@ -27,6 +27,7 @@ type Props = {
   pickupLon?: number;
   dropLat?: number;
   dropLon?: number;
+  vehicles?: any[];
   onChange?: (p: string, d: string) => void;
   onDistance?: (d: number) => void;
   onDuration?: (time: string) => void;
@@ -64,6 +65,39 @@ const createDropIcon = () =>
     popupAnchor: [0, -16],
   });
 
+const getVehicleEmoji = (type: string) => {
+  const t = type?.toLowerCase() || "";
+  if (t === "bike" || t === "motorcycle" || t === "scooter") return "🏍️";
+  if (t === "auto" || t === "rickshaw" || t === "tuk-tuk") return "🛺";
+  if (t === "truck" || t === "loading") return "🚚";
+  if (t === "heavy" || t === "lorry") return "🚛";
+  return "🚗";
+};
+
+const createVehicleIcon = (type: string, vehicleModel: string) => {
+  const emoji = getVehicleEmoji(type);
+
+  return L.divIcon({
+    className: "leaflet-custom-vehicle-marker",
+    html: `
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;">
+        <div style="position: absolute; width: 38px; height: 38px; border-radius: 50%; background: rgba(0, 0, 0, 0.15); animation: pulse 2s infinite;"></div>
+        <div style="width: 34px; height: 34px; border-radius: 50%; background: #ffffff; border: 2.5px solid #18181b; box-shadow: 0 4px 14px rgba(0,0,0,0.28); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">
+          <span style="font-size: 19px; line-height: 1; display: inline-block; user-select: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));">
+            ${emoji}
+          </span>
+        </div>
+        <div style="margin-top: 3px; background: rgba(9, 9, 11, 0.92); backdrop-filter: blur(4px); color: #ffffff; font-size: 9.5px; font-weight: 800; padding: 1.5px 7px; border-radius: 9999px; white-space: nowrap; border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 2px 8px rgba(0,0,0,0.3); letter-spacing: 0.02em;">
+          ${vehicleModel || type}
+        </div>
+      </div>
+    `,
+    iconSize: [36, 54],
+    iconAnchor: [18, 27],
+    popupAnchor: [0, -28],
+  });
+};
+
 function formatDuration(seconds: number): string {
   const totalMinutes = Math.round(seconds / 60);
   if (totalMinutes < 1) return "< 1 min";
@@ -99,6 +133,7 @@ const SearchMap = ({
   pickupLon,
   dropLat,
   dropLon,
+  vehicles = [],
   onChange,
   onDistance,
   onDuration,
@@ -375,6 +410,71 @@ const SearchMap = ({
             </Popup>
           </Marker>
         )}
+
+        {/* Nearby Vehicles (Uber style) */}
+        {vehicles &&
+          vehicles.map((v: any, idx: number) => {
+            const coords = v.owner?.location?.coordinates;
+            let vLat: number | undefined;
+            let vLon: number | undefined;
+
+            if (
+              coords &&
+              Array.isArray(coords) &&
+              coords.length === 2 &&
+              (coords[0] !== 0 || coords[1] !== 0)
+            ) {
+              vLon = coords[0];
+              vLat = coords[1];
+            } else if (p1) {
+              // If driver location hasn't been emitted yet, generate realistic nearby position around pickup point
+              const angle = ((idx + 1) * 137.5 * Math.PI) / 180;
+              const radiusKm = 0.35 + (idx % 4) * 0.18; // 350m - 900m
+              const offsetLat = (radiusKm / 111) * Math.cos(angle);
+              const offsetLon =
+                (radiusKm / (111 * Math.cos((p1[0] * Math.PI) / 180))) *
+                Math.sin(angle);
+              vLat = p1[0] + offsetLat;
+              vLon = p1[1] + offsetLon;
+            }
+
+            if (!vLat || !vLon) return null;
+
+            return (
+              <Marker
+                key={v._id || idx}
+                position={[vLat, vLon]}
+                icon={createVehicleIcon(v.type, v.vehicleModel)}
+              >
+                <Popup>
+                  <div className="text-xs font-sans text-zinc-900 p-1.5 space-y-1.5 min-w-[160px]">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base leading-none">{getVehicleEmoji(v.type)}</span>
+                        <span className="font-black text-sm text-zinc-950">
+                          {v.vehicleModel}
+                        </span>
+                      </div>
+                      <span className="text-[9px] bg-zinc-900 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-wider">
+                        {v.type}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-mono font-bold text-zinc-700 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200 inline-block uppercase tracking-wider">
+                      {v.number}
+                    </div>
+                    <div className="text-[11px] text-emerald-600 font-bold">
+                      ₹{v.pricePerKM}/km • ₹{v.baseFare || 30} base
+                    </div>
+                    {v.owner?.name && (
+                      <div className="text-[10px] text-zinc-400 font-medium">
+                        Driver: {v.owner.name}
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
 
         {p1 && p2 && <FitBounds p1={p1} p2={p2} />}
       </MapContainer>

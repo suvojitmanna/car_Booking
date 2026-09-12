@@ -32,11 +32,11 @@ const SearchMap = dynamic(() => import("@/src/components/SearchMap"), {
 });
 
 const VEHICLE_meta: any = {
-  bike: { label: "Bike", Icon: Bike },
-  auto: { label: "Auto", Icon: Car },
-  car: { label: "Car", Icon: Car },
-  loading: { label: "Loading", Icon: Truck },
-  truck: { label: "Truck", Icon: Truck },
+  bike: { label: "Bike", Icon: Bike, emoji: "🏍️" },
+  auto: { label: "Auto", Icon: Car, emoji: "🛺" },
+  car: { label: "Car", Icon: Car, emoji: "🚗" },
+  loading: { label: "Loading", Icon: Truck, emoji: "🚚" },
+  truck: { label: "Truck", Icon: Truck, emoji: "🚛" },
 };
 
 const SearchContent = () => {
@@ -123,6 +123,7 @@ const SearchContent = () => {
           pickupLon={pickupLon}
           dropLat={dropLat}
           dropLon={dropLon}
+          vehicles={vehicleData}
           onChange={(p, d) => {
             setPickup(p);
             setDrop(d);
@@ -196,8 +197,9 @@ const SearchContent = () => {
                   : "No Vehicles Available"}
             </h2>
             {meta && (
-              <div className="text-zinc-400 text-xs mt-0.5">
-                {meta.label} riders near your pickup location
+              <div className="text-zinc-500 text-xs mt-0.5 flex items-center gap-1.5 font-medium">
+                <span>{meta.emoji}</span>
+                <span>{meta.label} drivers near your pickup location</span>
               </div>
             )}
           </div>
@@ -308,7 +310,7 @@ const SearchContent = () => {
                       mobile: String(mobile || ""),
                       model: v.vehicleModel || "",
                     });
-                    router.push(`/checkout?${url.toString()}`);
+                    router.push(`/user/checkout?${url.toString()}`);
                   }}
                 />
               </motion.div>
