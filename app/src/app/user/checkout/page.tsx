@@ -10,6 +10,7 @@ import {
   Clock,
   CreditCard,
   IndianRupee,
+  Loader2,
   MapPin,
   Navigation,
   ShieldCheck,
@@ -17,6 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import axios from "axios";
 
 const VEHICLE_META: Record<
   string,
@@ -46,18 +48,34 @@ const CheckoutContent = () => {
   const [drop, setDrop] = useState(params?.get("drop") || "");
   const mobile = params?.get("mobile") || "";
   const driverId = params?.get("driverId") || "";
+  const vehicleId = params?.get("vehicleId") || "";
   const model = params?.get("model") || "";
   const pickUpLat = Number(
-    params?.get("pickUpLat") || params?.get("pickuplat") || 0,
+    params?.get("pickuplat") ||
+      params?.get("pickupLat") ||
+      params?.get("pickUpLat") ||
+      0,
   );
   const pickUpLon = Number(
-    params?.get("pickUpLon") || params?.get("pickuplon") || 0,
+    params?.get("pickuplon") ||
+      params?.get("pickupLon") ||
+      params?.get("pickUpLon") ||
+      0,
   );
-  const dropLat = Number(params?.get("dropLat") || params?.get("droplat") || 0);
-  const dropLon = Number(params?.get("dropLon") || params?.get("droplon") || 0);
+  const dropLat = Number(
+    params?.get("droplat") ||
+      params?.get("dropLat") ||
+      params?.get("drop_lat") ||
+      0,
+  );
+  const dropLon = Number(
+    params?.get("droplon") ||
+      params?.get("dropLon") ||
+      params?.get("drop_lon") ||
+      0,
+  );
   const vehicle = params?.get("vehicle") || "";
   const fare = params?.get("fare") || "0";
-
   const vehicleKey = (vehicle || "").toLowerCase();
   const meta = VEHICLE_META[vehicleKey] || {
     label: vehicle ? vehicle.toUpperCase() : "Car",
@@ -69,6 +87,49 @@ const CheckoutContent = () => {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+
+  const handleBooking = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { data } = await axios.post("/api/booking/create", {
+        driver: driverId,
+        vehicleId: vehicleId || model,
+        pickUpAddress: pickup || "Pickup Location",
+        dropAddress: drop || "Drop Location",
+        pickupLocation: {
+          type: "Point",
+          coordinates: [
+            pickUpLon && !isNaN(pickUpLon) ? pickUpLon : 88.3639,
+            pickUpLat && !isNaN(pickUpLat) ? pickUpLat : 22.5726,
+          ],
+        },
+        dropLocation: {
+          type: "Point",
+          coordinates: [
+            dropLon && !isNaN(dropLon) ? dropLon : 88.3639,
+            dropLat && !isNaN(dropLat) ? dropLat : 22.5726,
+          ],
+        },
+        fare: Number(fare) || 0,
+        userMobileNumber: mobile || "",
+      });
+
+      console.log("Booking result:", data);
+      if (data?.bookingStatus) {
+        setStatus(data.bookingStatus as Status);
+      } else {
+        setStatus("requested");
+      }
+    } catch (err: any) {
+      console.error("Booking error:", err);
+      const message =
+        err?.response?.data?.message || "Failed to create booking request.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-100 px-4 py-8 sm:py-12">
@@ -260,18 +321,66 @@ const CheckoutContent = () => {
                   )}
 
                   <motion.button
+                    disabled={loading}
                     whileTap={{ scale: 0.97 }}
                     whileHover={{ scale: 1.02 }}
-                    className="group w-full py-4 rounded-2xl bg-zinc-900 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-zinc-900/15 hover:bg-black transition-all cursor-pointer"
+                    onClick={handleBooking}
+                    className="group w-full py-4 rounded-2xl bg-zinc-900 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-zinc-900/15 hover:bg-black transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Zap size={16} className="text-amber-400 fill-amber-400" />
+                    {loading ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className="animate-spin text-white"
+                        />
+                        <span>Creating Request...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap
+                          size={16}
+                          className="text-amber-400 fill-amber-400"
+                        />
+                        <span>Confirm & Request Ride</span>
+                        <ArrowRight
+                          size={16}
+                          className="transition-transform duration-300 group-hover:translate-x-1"
+                        />
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
 
-                    <span>Confirm & Request Ride</span>
-
-                    <ArrowRight
-                      size={16}
-                      className="transition-transform duration-300 group-hover:translate-x-1"
-                    />
+            {status === "requested" && (
+              <motion.div
+                key="requested"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.3 }}
+                className="p-8 sm:p-10 flex flex-col flex-1 items-center justify-center text-center space-y-5"
+              >
+                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center animate-pulse shadow-sm">
+                  <Clock size={28} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-zinc-900">
+                    Ride Requested!
+                  </h3>
+                  <p className="text-zinc-500 text-xs mt-1.5 max-w-xs">
+                    Notifying nearby driver. Please wait while they confirm your
+                    ride...
+                  </p>
+                </div>
+                <div className="w-full pt-4">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setStatus("idle")}
+                    className="w-full py-3 rounded-2xl bg-zinc-100 text-zinc-600 font-bold text-xs hover:bg-zinc-200 transition-colors cursor-pointer"
+                  >
+                    Cancel Request
                   </motion.button>
                 </div>
               </motion.div>

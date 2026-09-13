@@ -27,6 +27,10 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import FitBounds from "./FitBounds";
+import {
+  geoapifyReverseGeocode,
+  geoapifyAutocomplete,
+} from "@/src/lib/geoapify";
 
 export type LocationPickerResult = {
   pickup: string;
@@ -225,36 +229,7 @@ const MapPickerModal = ({
     lat: number,
     lon: number,
   ): Promise<{ address: string; country: string }> => {
-    try {
-      const { data } = await axios.get(
-        `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}`,
-      );
-      if (data?.features?.length > 0) {
-        const p = data.features[0].properties;
-        const parts = [
-          p.name,
-          p.street,
-          p.locality || p.district || p.suburb,
-          p.city,
-          p.state,
-          p.country,
-        ].filter(Boolean);
-        const uniqueParts = parts.filter(
-          (item, index) => parts.indexOf(item) === index,
-        );
-        return {
-          address:
-            uniqueParts.join(", ") || `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
-          country: p.country || "",
-        };
-      }
-    } catch (err) {
-      console.error("Reverse geocoding error:", err);
-    }
-    return {
-      address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
-      country: "",
-    };
+    return await geoapifyReverseGeocode(lat, lon);
   };
 
   const fetchRoute = useCallback(
@@ -374,10 +349,8 @@ const MapPickerModal = ({
     }
     setIsSearching(true);
     try {
-      const { data } = await axios.get(
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(query.trim())}&limit=6&lang=en`,
-      );
-      setSuggestions(data.features || []);
+      const features = await geoapifyAutocomplete(query.trim(), 6);
+      setSuggestions(features || []);
     } catch {
       setSuggestions([]);
     } finally {
@@ -388,10 +361,12 @@ const MapPickerModal = ({
   const handleSelectSuggestion = async (feature: any) => {
     const [lon, lat] = feature.geometry.coordinates;
     const p = feature.properties;
-    const parts = [p.name, p.street, p.city, p.state, p.country].filter(
-      Boolean,
-    );
-    const address = parts.filter((v, i, a) => a.indexOf(v) === i).join(", ");
+    const address =
+      p.formatted ||
+      [p.name, p.street, p.city, p.state, p.country]
+        .filter(Boolean)
+        .filter((v: any, i: any, a: any) => a.indexOf(v) === i)
+        .join(", ");
     const coords: [number, number] = [lat, lon];
 
     setMapCenter(coords);

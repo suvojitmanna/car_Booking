@@ -21,6 +21,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { VehicleType } from "@/src/models/vehicle.model";
 import axios from "axios";
+import {
+  geoapifyReverseGeocode,
+  geoapifyAutocomplete,
+} from "@/src/lib/geoapify";
 
 const MapPickerModal = dynamic(
   () => import("@/src/components/MapPickerModal"),
@@ -94,17 +98,10 @@ const Page = () => {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          const { data } = await axios.get(
-            `https://photon.komoot.io/reverse?lon=${longitude}&lat=${latitude}`,
-          );
-          const feature = data?.features?.[0];
-          if (feature) {
-            const p = feature.properties;
-            const address = [p.name, p.street, p.city, p.state]
-              .filter(Boolean)
-              .join(", ");
-            setPickup(address || p.name || "");
-            setPickUpCountry(p.country || "");
+          const res = await geoapifyReverseGeocode(latitude, longitude);
+          if (res?.address) {
+            setPickup(res.address);
+            setPickUpCountry(res.country || "");
             setPickUpLon(longitude);
             setPickUpLat(latitude);
             setPickUpSuggestion([]);
@@ -134,21 +131,22 @@ const Page = () => {
     }
     setLoading(true);
     try {
-      const { data } = await axios.get(
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(q.trim())}&limit=8&lang=en`,
-      );
-      let result: place[] = (data.features ?? []).map((f: any, idx: number) => {
+      const features = await geoapifyAutocomplete(q.trim(), 8);
+      let result: place[] = (features ?? []).map((f: any, idx: number) => {
         const p = f.properties;
         const coords = f.geometry?.coordinates;
         return {
           id: String(
-            p.osm_id || p.id || `${coords?.[1]}-${coords?.[0]}-${idx}`,
+            p.place_id ||
+              p.osm_id ||
+              p.id ||
+              `${coords?.[1]}-${coords?.[0]}-${idx}`,
           ),
-          name: p.name || p.street || p.city || "Location",
+          name: p.formatted || p.name || p.street || p.city || "Location",
           city: p.city,
           state: p.state,
           country: p.country,
-          countryCode: p.countrycode || p.countryCode,
+          countryCode: p.country_code || p.countrycode || p.countryCode,
           lat: coords?.[1],
           lon: coords?.[0],
         };

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
-type BookingStatus =
+export type BookingStatus =
+  | "idle"
   | "requested"
   | "awaiting_payment"
   | "confirmed"
@@ -10,36 +11,36 @@ type BookingStatus =
   | "rejected"
   | "expired";
 
-type PaymentStatus = "pending" | "paid" | "cash" | "failed";
+export type PaymentStatus = "pending" | "paid" | "cash" | "failed";
 
 export interface IBooking {
   user: mongoose.Types.ObjectId;
-  driver: mongoose.Types.ObjectId;
-  vehicle: mongoose.Types.ObjectId;
+  driver?: mongoose.Types.ObjectId;
+  vehicle?: mongoose.Types.ObjectId;
   pickUpAddress: string;
   dropAddress: string;
 
-  pickUpLocation: {
+  pickUpLocation?: {
     type: "Point";
     coordinates: [number, number];
   };
-  dropLocation: {
+  dropLocation?: {
     type: "Point";
     coordinates: [number, number];
   };
 
   fare: number;
-  userMobileNumber: number;
-  driverMobileNumber: number;
+  userMobileNumber?: string;
+  driverMobileNumber?: string;
   bookingStatus: BookingStatus;
   paymentStatus: PaymentStatus;
 
-  adminCommission: number;
-  partnerAmount: number;
-  pickUpOtp: string;
-  pickUpOtpExpired: Date;
-  dropOtp: string;
-  dropOtpExpired: Date;
+  adminCommission?: number;
+  partnerAmount?: number;
+  pickUpOtp?: string;
+  pickUpOtpExpired?: Date;
+  dropOtp?: string;
+  dropOtpExpired?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,55 +54,58 @@ const bookingSchema = new mongoose.Schema<IBooking>(
     },
     driver: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Driver",
-      required: true,
+      ref: "User",
     },
     vehicle: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Vehicle",
-      required: true,
     },
     pickUpAddress: {
       type: String,
-      required: true,
+      default: "",
     },
     dropAddress: {
       type: String,
-      required: true,
+      default: "",
     },
     pickUpLocation: {
       type: {
         type: String,
         enum: ["Point"],
+        default: "Point",
       },
       coordinates: {
         type: [Number],
+        default: [0, 0],
       },
     },
     dropLocation: {
       type: {
         type: String,
         enum: ["Point"],
+        default: "Point",
       },
       coordinates: {
         type: [Number],
+        default: [0, 0],
       },
     },
     fare: {
       type: Number,
-      required: true,
+      default: 0,
     },
     userMobileNumber: {
-      type: Number,
-      required: true,
+      type: String,
+      default: "",
     },
     driverMobileNumber: {
-      type: Number,
-      required: true,
+      type: String,
+      default: "",
     },
     bookingStatus: {
       type: String,
       enum: [
+        "idle",
         "requested",
         "awaiting_payment",
         "confirmed",
@@ -121,12 +125,10 @@ const bookingSchema = new mongoose.Schema<IBooking>(
     adminCommission: {
       type: Number,
       default: 0,
-      required: true,
     },
     partnerAmount: {
       type: Number,
       default: 0,
-      required: true,
     },
     pickUpOtp: {
       type: String,
@@ -147,6 +149,6 @@ const bookingSchema = new mongoose.Schema<IBooking>(
 );
 
 const Booking =
-  mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
+  mongoose.models.Booking || mongoose.model<IBooking>("Booking", bookingSchema);
 
 export default Booking;

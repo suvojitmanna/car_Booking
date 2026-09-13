@@ -19,6 +19,7 @@ import {
 import FitBounds from "./FitBounds";
 import { motion, AnimatePresence } from "motion/react";
 import { Navigation, Clock } from "lucide-react";
+import { geoapifyReverseGeocode, geoapifyGeocode } from "@/src/lib/geoapify";
 
 type Props = {
   pickUp: string;
@@ -158,25 +159,8 @@ const SearchMap = ({
     lon: number,
   ): Promise<string | null> => {
     try {
-      const { data } = await axios.get(
-        `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}`,
-      );
-      if (data?.features?.length > 0) {
-        const p = data.features[0].properties;
-        const parts = [
-          p.name,
-          p.street,
-          p.locality || p.district || p.suburb,
-          p.city,
-          p.state,
-          p.country,
-        ].filter(Boolean);
-        const uniqueParts = parts.filter(
-          (item, index) => parts.indexOf(item) === index,
-        );
-        return uniqueParts.join(", ") || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-      }
-      return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      const res = await geoapifyReverseGeocode(lat, lon);
+      return res.address || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
     } catch (err) {
       console.error("Reverse geocoding error:", err);
       return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
@@ -186,15 +170,7 @@ const SearchMap = ({
   const geoCoding = async (q: string): Promise<[number, number] | null> => {
     if (!q || !q.trim()) return null;
     try {
-      const { data } = await axios.get(
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(q.trim())}&limit=1`,
-      );
-
-      if (data?.features?.length) {
-        const [lon, lat] = data.features[0].geometry.coordinates;
-        return [lat, lon];
-      }
-      return null;
+      return await geoapifyGeocode(q);
     } catch (err) {
       console.error("Geocoding error:", err);
       return null;
@@ -450,7 +426,9 @@ const SearchMap = ({
                   <div className="text-xs font-sans text-zinc-900 p-1.5 space-y-1.5 min-w-[160px]">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base leading-none">{getVehicleEmoji(v.type)}</span>
+                        <span className="text-base leading-none">
+                          {getVehicleEmoji(v.type)}
+                        </span>
                         <span className="font-black text-sm text-zinc-950">
                           {v.vehicleModel}
                         </span>

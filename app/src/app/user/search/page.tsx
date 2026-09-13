@@ -301,6 +301,7 @@ const SearchContent = () => {
                       pickup: pickUp || "",
                       drop: drop || "",
                       driverId: driverId,
+                      vehicleId: v._id?.toString() || "",
                       vehicle: v.type || "",
                       fare: String(totalFare),
                       pickuplat: String(pickupLat || ""),
