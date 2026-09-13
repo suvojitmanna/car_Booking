@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 type BookingStatus =
-  | ["requested"]
+  | "requested"
   | "awaiting_payment"
   | "confirmed"
   | "started"
@@ -20,11 +20,11 @@ export interface IBooking {
   dropAddress: string;
 
   pickUpLocation: {
-    type: "point";
+    type: "Point";
     coordinates: [number, number];
   };
   dropLocation: {
-    type: "point";
+    type: "Point";
     coordinates: [number, number];
   };
 

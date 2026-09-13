@@ -4,22 +4,40 @@ import React, { Suspense, useState } from "react";
 import { motion } from "motion/react";
 import {
   ArrowLeft,
+  ArrowRight,
   Bike,
   Car,
+  Clock,
+  CreditCard,
   IndianRupee,
   MapPin,
   Navigation,
+  ShieldCheck,
   Truck,
+  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const VEHICLE_META: any = {
-  bike: { label: "Bike", Icon: Bike },
-  auto: { label: "Auto", Icon: Car },
-  car: { label: "Car", Icon: Car },
-  loading: { label: "Loading", Icon: Truck },
-  truck: { label: "Truck", Icon: Truck },
+const VEHICLE_META: Record<
+  string,
+  { label: string; Icon: React.ElementType; emoji: string }
+> = {
+  bike: { label: "Bike", Icon: Bike, emoji: "🏍️" },
+  auto: { label: "Auto", Icon: Car, emoji: "🛺" },
+  car: { label: "Car", Icon: Car, emoji: "🚗" },
+  loading: { label: "Loading", Icon: Truck, emoji: "🚚" },
+  truck: { label: "Truck", Icon: Truck, emoji: "🚛" },
 };
+
+type Status =
+  | "idle"
+  | "requested"
+  | "awaiting_payment"
+  | "rejected"
+  | "expired"
+  | "cancelled"
+  | "payment"
+  | "confirmed";
 
 const CheckoutContent = () => {
   const router = useRouter();
@@ -27,6 +45,8 @@ const CheckoutContent = () => {
   const [pickup, setPickup] = useState(params?.get("pickup") || "");
   const [drop, setDrop] = useState(params?.get("drop") || "");
   const mobile = params?.get("mobile") || "";
+  const driverId = params?.get("driverId") || "";
+  const model = params?.get("model") || "";
   const pickUpLat = Number(
     params?.get("pickUpLat") || params?.get("pickuplat") || 0,
   );
@@ -36,8 +56,19 @@ const CheckoutContent = () => {
   const dropLat = Number(params?.get("dropLat") || params?.get("droplat") || 0);
   const dropLon = Number(params?.get("dropLon") || params?.get("droplon") || 0);
   const vehicle = params?.get("vehicle") || "";
-  const fare = params?.get("fare") || "";
-  const { Icon, label } = VEHICLE_META[vehicle];
+  const fare = params?.get("fare") || "0";
+
+  const vehicleKey = (vehicle || "").toLowerCase();
+  const meta = VEHICLE_META[vehicleKey] || {
+    label: vehicle ? vehicle.toUpperCase() : "Car",
+    Icon: Car,
+    emoji: "🚗",
+  };
+  const { Icon, label, emoji } = meta;
+
+  const [status, setStatus] = useState<Status>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   return (
     <div className="min-h-screen bg-zinc-100 px-4 py-8 sm:py-12">
@@ -178,6 +209,73 @@ const CheckoutContent = () => {
             className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.07)] flex flex-col"
           >
             <div className="h-1 bg-zinc-900" />
+            {status === "idle" && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.3 }}
+                className="p-8 sm:p-10 flex flex-col flex-1 justify-between"
+              >
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18rem] text-zinc-400 mb-1">
+                    Ready to go
+                  </p>
+                  <h3 className="text-2xl font-black text-zinc-900 mb-6">
+                    Confirm Your Ride
+                  </h3>
+                  <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 space-y-3">
+                    {[
+                      {
+                        icon: <Clock size={14} />,
+                        text: "Driver will respond within 2 minutes",
+                      },
+                      {
+                        icon: <ShieldCheck size={14} />,
+                        text: "Verified & insured drivers only",
+                      },
+                      {
+                        icon: <CreditCard size={14} />,
+                        text: "Pay after driver accepts",
+                      },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-xl bg-zinc-200 flex items-center justify-center text-zinc-600 flex-shrink-0">
+                          {item.icon}
+                        </div>
+                        <p className="text-zinc-700 text-xs font-medium">
+                          {item.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-8 space-y-3">
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-xl">
+                      {error}
+                    </div>
+                  )}
+
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="group w-full py-4 rounded-2xl bg-zinc-900 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-zinc-900/15 hover:bg-black transition-all cursor-pointer"
+                  >
+                    <Zap size={16} className="text-amber-400 fill-amber-400" />
+
+                    <span>Confirm & Request Ride</span>
+
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform duration-300 group-hover:translate-x-1"
+                    />
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </div>
