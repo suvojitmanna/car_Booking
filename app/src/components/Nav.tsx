@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,8 +10,21 @@ import { RootState } from "../redux/store";
 import { Bike, Car, ChevronRight, LogOut, Menu, Truck, X } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { setUserData } from "../redux/userSlice";
+import axios from "axios";
 
-const Nav_Items = ["home", "booking", "about Us", "contact"];
+const USER_NAV_ITEMS = [
+  { label: "Home", href: "/" },
+  { label: "Booking", href: "/booking" },
+  { label: "About Us", href: "/about-us" },
+  { label: "Contact", href: "/contact" },
+];
+
+const PARTNER_NAV_ITEMS = [
+  { label: "Home", href: "/" },
+  { label: "Pending Requests", href: "/partner/pending-requests" },
+  { label: "Bookings", href: "/partner/bookings" },
+  { label: "Active Ride", href: "/partner/active-ride" },
+];
 
 const Nav = () => {
   const pathName = usePathname();
@@ -20,6 +33,7 @@ const Nav = () => {
   const userData = useSelector((state: RootState) => state.user.userData);
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number>(0);
 
   const dispatch = useDispatch();
   const router = useRouter();
@@ -29,6 +43,29 @@ const Nav = () => {
   const userName = userData?.name || session?.user?.name || "User";
   const userEmail = userData?.email || session?.user?.email || "";
   const userRole = userData?.role || (session?.user as any)?.role || "user";
+
+  const navItems = userRole === "partner" ? PARTNER_NAV_ITEMS : USER_NAV_ITEMS;
+
+  useEffect(() => {
+    if (userRole !== "partner") {
+      setPendingCount(0);
+      return;
+    }
+
+    const fetchCount = async () => {
+      try {
+        const { data } = await axios.get("/api/partner/bookings/pending-requested-count");
+        if (typeof data?.count === "number") {
+          setPendingCount(data.count);
+        }
+      } catch (e) {
+        setPendingCount(0);
+      }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 10000);
+    return () => clearInterval(interval);
+  }, [userRole, pathName]);
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
@@ -55,19 +92,33 @@ const Nav = () => {
             style={{ width: "auto", height: "auto" }}
           />
 
-          <div className="hidden md:flex items-center gap-10">
-            {Nav_Items.map((i, index) => {
-              let href = i === "home" ? "/" : `/${i.toLocaleLowerCase()}`;
-              const active = href === pathName;
+          <div className="hidden md:flex items-center gap-8 lg:gap-10">
+            {navItems.map((item, index) => {
+              const active = item.href === pathName;
+              const isPending = item.label === "Pending Requests";
+
               return (
                 <Link
                   key={index}
-                  href={href}
-                  className={`text-sm capitalize font-medium transition ${
-                    active ? "text-white" : "text-gray-400 hover:text-white"
+                  href={item.href}
+                  className={`inline-flex items-center gap-2 text-sm font-medium transition ${
+                    active
+                      ? "text-white font-semibold"
+                      : "text-gray-400 hover:text-white"
                   }`}
                 >
-                  {i}
+                  <span>{item.label}</span>
+                  {isPending && (
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold rounded-full shadow-xs ${
+                        pendingCount > 0
+                          ? "bg-rose-600 text-white animate-pulse"
+                          : "bg-white/10 text-gray-300"
+                      }`}
+                    >
+                      {pendingCount > 99 ? "99+" : pendingCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -283,26 +334,33 @@ const Nav = () => {
               className="fixed top-[85px] left-1/2 -translate-x-1/2 w-[92%] bg-[#0B0B0B] rounded-2xl shadow-2xl z-40 md:hidden overflow-hidden"
             >
               <div className="flex flex-col divide-y divide-white/10">
-                {Nav_Items.map((i, index) => {
-                  const href =
-                    i === "home"
-                      ? "/"
-                      : `/${i.toLowerCase().replace(" ", "-")}`;
-
-                  const active = href === pathName;
+                {navItems.map((item, index) => {
+                  const active = item.href === pathName;
+                  const isPending = item.label === "Pending Requests";
 
                   return (
                     <Link
                       key={index}
-                      href={href}
+                      href={item.href}
                       onClick={() => setMenuOpen(false)}
-                      className={`px-6 py-4 text-sm font-medium transition-all ${
+                      className={`flex items-center justify-between px-6 py-4 text-sm font-medium transition-all ${
                         active
                           ? "bg-white/10 text-white font-semibold"
                           : "text-gray-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      {i}
+                      <span>{item.label}</span>
+                      {isPending && (
+                        <span
+                          className={`inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[11px] font-bold rounded-full shadow-xs ${
+                            pendingCount > 0
+                              ? "bg-rose-600 text-white"
+                              : "bg-white/10 text-gray-400"
+                          }`}
+                        >
+                          {pendingCount > 99 ? "99+" : pendingCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
